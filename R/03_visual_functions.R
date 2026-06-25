@@ -63,23 +63,37 @@ plot_phase_flow <- function() {
       "Embargo-sensitive",
       "Breach / response"
     ),
-    x = seq_along(phase),
+    phase_label = str_wrap(phase, width = 10),
+    x = seq(1, by = 2.85, length.out = length(phase)),
     y = 1
   )
 
   ggplot(phases, aes(x = x, y = y)) +
-    geom_tile(width = 0.86, height = 0.42, fill = "#edf2f7", colour = "#667085", linewidth = 0.4) +
-    geom_text(aes(label = phase), size = 3.6, lineheight = 0.95) +
-    geom_segment(
-      data = phases %>% filter(x < max(x)),
-      aes(x = x + 0.43, xend = x + 0.57, y = y, yend = y),
-      arrow = arrow(length = unit(0.16, "cm")),
-      inherit.aes = FALSE,
-      colour = "#475467",
+    geom_tile(
+      width = 2.2,
+      height = 0.72,
+      fill = "#f8fafc",
+      colour = "#9aa6b2",
       linewidth = 0.45
     ) +
-    scale_x_continuous(limits = c(0.45, 5.55), expand = expansion(mult = 0.02)) +
-    scale_y_continuous(limits = c(0.65, 1.35), expand = expansion(mult = 0)) +
+    geom_text(
+      aes(label = phase_label),
+      colour = "#17202a",
+      size = 3.9,
+      fontface = "bold",
+      lineheight = 0.95
+    ) +
+    geom_segment(
+      data = phases %>% filter(x < max(x)),
+      aes(x = x + 1.15, xend = x + 1.68, y = y, yend = y),
+      arrow = arrow(length = unit(0.22, "cm"), type = "closed"),
+      inherit.aes = FALSE,
+      colour = "#52616f",
+      linewidth = 0.75,
+      lineend = "round"
+    ) +
+    scale_x_continuous(limits = c(-0.25, max(phases$x) + 1.25), expand = expansion(mult = 0.01)) +
+    scale_y_continuous(limits = c(0.45, 1.55), expand = expansion(mult = 0)) +
     theme_void()
 }
 
@@ -94,17 +108,20 @@ plot_crisis_timeline <- function(key_events, show_anomalies = FALSE) {
       event_label = if ("event_label" %in% names(.)) coalesce(as.character(.data$event_label), "Event") else "Event",
       event_type = if ("event_type" %in% names(.)) coalesce(as.character(.data$event_type), "Event") else "Event",
       crisis_phase = if ("crisis_phase" %in% names(.)) coalesce(as.character(.data$crisis_phase), "Unclassified") else "Unclassified",
-      event_headline = if ("event_headline" %in% names(.)) coalesce(as.character(.data$event_headline), "") else "",
-      event_narrative = if ("event_narrative" %in% names(.)) coalesce(as.character(.data$event_narrative), "") else "",
-      is_anomaly_event = if ("is_anomaly_event" %in% names(.)) coalesce(.data$is_anomaly_event, FALSE) else FALSE,
-      narrative_preview = str_trunc(str_squish(str_c(event_headline, event_narrative, sep = " ")), 180),
-      y_value = factor(event_type, levels = rev(unique(event_type))),
+      is_anomaly_event = if ("is_anomaly_event" %in% names(.)) {
+        coalesce(as.logical(.data$is_anomaly_event), FALSE)
+      } else if ("anomaly_reason" %in% names(.)) {
+        !is.na(.data$anomaly_reason) & nzchar(as.character(.data$anomaly_reason))
+      } else {
+        FALSE
+      },
+      anomaly_status = if_else(is_anomaly_event, "Anomaly", "Not flagged"),
       tooltip = str_c(
         "<b>", event_label, "</b>",
         "<br>Time: ", format(event_time, "%Y-%m-%d %H:%M"),
         "<br>Type: ", event_type,
         "<br>Phase: ", crisis_phase,
-        if_else(nzchar(narrative_preview), str_c("<br>Context: ", narrative_preview), "")
+        "<br>Status: ", anomaly_status
       )
     ) %>%
     filter(!is.na(event_time))
@@ -125,9 +142,13 @@ plot_crisis_timeline <- function(key_events, show_anomalies = FALSE) {
 
   timeline <- timeline %>%
     mutate(
+      y_value = as.numeric(factor(event_type, levels = rev(unique(event_type)))),
       label_to_show = if_else(event_label %in% labelled_events, event_label, NA_character_),
+      label_y = y_value + if_else(row_number() %% 2 == 0, 0.24, -0.24),
       anomaly_display = if (show_anomalies) is_anomaly_event else FALSE
     )
+
+  event_type_levels <- rev(unique(timeline$event_type))
 
   suspected_release_time <- ymd_hms("2046-06-05 17:00:00", tz = "UTC")
   suspected_release_start <- suspected_release_time - minutes(15)
@@ -168,10 +189,13 @@ plot_crisis_timeline <- function(key_events, show_anomalies = FALSE) {
       inherit.aes = TRUE
     ) +
     geom_text(
-      aes(label = label_to_show),
+      data = timeline %>% filter(!is.na(label_to_show)),
+      aes(y = label_y, label = label_to_show),
       hjust = -0.05,
-      vjust = -0.45,
-      size = 3,
+      vjust = 0.5,
+      size = 3.45,
+      fontface = "bold",
+      lineheight = 0.95,
       na.rm = TRUE,
       check_overlap = TRUE
     ) +
@@ -182,6 +206,11 @@ plot_crisis_timeline <- function(key_events, show_anomalies = FALSE) {
     ) +
     scale_size_manual(values = c(`FALSE` = 3, `TRUE` = 4.5), guide = "none") +
     scale_x_datetime(labels = label_date_short()) +
+    scale_y_continuous(
+      breaks = seq_along(event_type_levels),
+      labels = event_type_levels,
+      expand = expansion(add = 0.85)
+    ) +
     labs(
       x = NULL,
       y = NULL,
@@ -191,8 +220,191 @@ plot_crisis_timeline <- function(key_events, show_anomalies = FALSE) {
     theme(
       legend.position = "bottom",
       panel.grid.minor = element_blank(),
+      panel.grid.major.y = element_line(colour = "#e5e9f0", linewidth = 0.35),
       plot.caption = element_text(colour = "#52616f", hjust = 0)
     )
+}
+
+build_crisis_timeline_plotly <- function(key_events, show_anomalies = FALSE) {
+  if (!has_rows(key_events) || !"event_time" %in% names(key_events)) {
+    return(plotly::ggplotly(empty_plot()))
+  }
+
+  timeline <- key_events %>%
+    mutate(
+      event_time = as.POSIXct(event_time, tz = "UTC"),
+      event_label = if ("event_label" %in% names(.)) coalesce(as.character(.data$event_label), "Event") else "Event",
+      event_type = if ("event_type" %in% names(.)) coalesce(as.character(.data$event_type), "Event") else "Event",
+      crisis_phase = if ("crisis_phase" %in% names(.)) coalesce(as.character(.data$crisis_phase), "Unclassified") else "Unclassified",
+      is_anomaly_event = if ("is_anomaly_event" %in% names(.)) {
+        coalesce(as.logical(.data$is_anomaly_event), FALSE)
+      } else if ("anomaly_reason" %in% names(.)) {
+        !is.na(.data$anomaly_reason) & nzchar(as.character(.data$anomaly_reason))
+      } else {
+        FALSE
+      },
+      anomaly_status = if_else(is_anomaly_event, "Anomaly", "Not flagged")
+    ) %>%
+    filter(!is.na(event_time))
+
+  if (nrow(timeline) == 0) {
+    return(plotly::ggplotly(empty_plot()))
+  }
+
+  event_type_levels <- rev(unique(timeline$event_type))
+  timeline <- timeline %>%
+    mutate(
+      y_value = as.numeric(factor(event_type, levels = event_type_levels)),
+      trace_group = if_else(show_anomalies & is_anomaly_event, "Anomaly event", "Normal event"),
+      tooltip = str_c(
+        "<b>", event_label, "</b>",
+        "<br>Time: ", format(event_time, "%Y-%m-%d %H:%M"),
+        "<br>Type: ", event_type,
+        "<br>Phase: ", crisis_phase,
+        "<br>Status: ", anomaly_status
+      )
+    )
+
+  labelled_events <- c(
+    "AG inquiries",
+    "NHPI report",
+    "Elena incident",
+    "Judge enters",
+    "SaltWind piece",
+    "ResidentIQ rumor",
+    "Embargo breach"
+  )
+
+  label_data <- timeline %>%
+    filter(event_label %in% labelled_events) %>%
+    arrange(event_time) %>%
+    distinct(event_label, .keep_all = TRUE) %>%
+    mutate(yshift = rep(c(34, -38, 48, -52), length.out = n()))
+
+  label_annotations <- lapply(seq_len(nrow(label_data)), function(i) {
+    list(
+      x = label_data$event_time[[i]],
+      y = label_data$y_value[[i]],
+      text = label_data$event_label[[i]],
+      xref = "x",
+      yref = "y",
+      showarrow = FALSE,
+      yshift = label_data$yshift[[i]],
+      font = list(size = 13, color = "#17202a", family = "Arial"),
+      bgcolor = "rgba(255,255,255,0.88)",
+      bordercolor = "rgba(207,214,223,0.9)",
+      borderpad = 3
+    )
+  })
+
+  suspected_release_time <- ymd_hms("2046-06-05 17:00:00", tz = "UTC")
+  suspected_release_start <- suspected_release_time - minutes(15)
+  suspected_release_end <- suspected_release_time + minutes(15)
+  embargo_deadline <- ymd_hms("2046-06-05 18:00:00", tz = "UTC")
+
+  timeline_shapes <- list(
+    list(
+      type = "rect",
+      xref = "x",
+      yref = "paper",
+      x0 = suspected_release_start,
+      x1 = suspected_release_end,
+      y0 = 0,
+      y1 = 1,
+      fillcolor = "rgba(245,158,11,0.12)",
+      line = list(width = 0),
+      layer = "below"
+    ),
+    list(
+      type = "line",
+      xref = "x",
+      yref = "paper",
+      x0 = suspected_release_time,
+      x1 = suspected_release_time,
+      y0 = 0,
+      y1 = 1,
+      line = list(color = "#d97706", width = 1.2, dash = "dash")
+    ),
+    list(
+      type = "line",
+      xref = "x",
+      yref = "paper",
+      x0 = embargo_deadline,
+      x1 = embargo_deadline,
+      y0 = 0,
+      y1 = 1,
+      line = list(color = "#b91c1c", width = 1.3, dash = "dot")
+    )
+  )
+
+  plot_data_normal <- timeline %>% filter(trace_group == "Normal event")
+  plot_data_anomaly <- timeline %>% filter(trace_group == "Anomaly event")
+
+  p <- plot_ly()
+
+  if (nrow(plot_data_normal) > 0) {
+    p <- p %>%
+      add_trace(
+        data = plot_data_normal,
+        x = ~event_time,
+        y = ~y_value,
+        type = "scatter",
+        mode = "markers",
+        name = "Normal event",
+        text = ~tooltip,
+        hoverinfo = "text",
+        marker = list(color = "#2f6f9f", size = 9, opacity = 0.9, line = list(color = "#ffffff", width = 1))
+      )
+  }
+
+  if (nrow(plot_data_anomaly) > 0) {
+    p <- p %>%
+      add_trace(
+        data = plot_data_anomaly,
+        x = ~event_time,
+        y = ~y_value,
+        type = "scatter",
+        mode = "markers",
+        name = "Anomaly event",
+        text = ~tooltip,
+        hoverinfo = "text",
+        marker = list(color = "#c2410c", size = 12, opacity = 0.95, symbol = "circle-open", line = list(color = "#b91c1c", width = 2))
+      )
+  }
+
+  p %>%
+    layout(
+      annotations = label_annotations,
+      shapes = timeline_shapes,
+      legend = list(
+        orientation = "h",
+        x = 0,
+        y = 1.12,
+        xanchor = "left",
+        yanchor = "bottom",
+        bgcolor = "rgba(255,255,255,0)"
+      ),
+      margin = list(l = 150, r = 30, t = 80, b = 115),
+      hoverlabel = list(bgcolor = "#ffffff", bordercolor = "#cfd6df", font = list(color = "#17202a")),
+      xaxis = list(
+        title = "",
+        rangeslider = list(visible = TRUE, thickness = 0.12),
+        showgrid = TRUE,
+        gridcolor = "#e5e9f0",
+        zeroline = FALSE
+      ),
+      yaxis = list(
+        title = "",
+        tickmode = "array",
+        tickvals = seq_along(event_type_levels),
+        ticktext = event_type_levels,
+        range = c(0.25, length(event_type_levels) + 0.75),
+        showgrid = TRUE,
+        gridcolor = "#e5e9f0",
+        zeroline = FALSE
+      )
+    ) %>%
+    config(displayModeBar = TRUE)
 }
 
 plot_message_volume_by_phase <- function(comms) {
@@ -237,10 +449,6 @@ plot_sensitive_keyword_counts <- function(comms) {
 }
 
 build_causal_chain_network <- function(nodes, edges) {
-  if (!has_rows(nodes) || !has_rows(edges)) {
-    return(visNetwork(data.frame(id = "empty", label = "No data available"), data.frame()))
-  }
-
   stage_order <- c(
     "Governance concerns",
     "Media escalation",
@@ -251,34 +459,134 @@ build_causal_chain_network <- function(nodes, edges) {
     "Breach response"
   )
 
-  vis_nodes <- nodes %>%
-    mutate(
-      id = if ("id" %in% names(.)) as.character(.data$id) else as.character(.data$node_id),
-      label = if ("label" %in% names(.)) as.character(.data$label) else as.character(.data$stage),
-      level = if ("stage_order" %in% names(.)) as.numeric(.data$stage_order) else as.numeric(row_number()),
-      level = if_else(label %in% stage_order, as.numeric(match(label, stage_order)), level),
-      title = str_c(
-        "<b>", label, "</b>",
-        "<br>Conceptual evidence stage for explaining crisis escalation.",
-        if ("description" %in% names(.)) str_c("<br>", .data$description) else ""
-      ),
-      shape = "box"
-    ) %>%
-    arrange(level) %>%
-    select(id, label, level, title, shape)
+  fallback_nodes <- tibble(
+    id = paste0("causal_", seq_along(stage_order)),
+    raw_label = stage_order,
+    level = seq_along(stage_order),
+    description = "Conceptual evidence stage for explaining crisis escalation."
+  )
 
-  vis_edges <- edges %>%
-    transmute(
-      from = as.character(.data$from),
-      to = as.character(.data$to),
+  use_fallback <- !has_rows(nodes)
+
+  if (!use_fallback) {
+    node_id_col <- intersect(c("id", "node_id", "stage_id"), names(nodes))
+    node_label_col <- intersect(c("label", "stage", "title", "description"), names(nodes))
+
+    use_fallback <- length(node_id_col) == 0 || length(node_label_col) == 0
+  }
+
+  if (use_fallback) {
+    node_base <- fallback_nodes
+  } else {
+    node_id_col <- intersect(c("id", "node_id", "stage_id"), names(nodes))[[1]]
+    node_label_col <- intersect(c("label", "stage", "title", "description"), names(nodes))[[1]]
+    node_desc_col <- intersect(c("description", "title", "label", "stage"), names(nodes))
+
+    node_base <- nodes %>%
+      transmute(
+        id = as.character(.data[[node_id_col]]),
+        raw_label = as.character(.data[[node_label_col]]),
+        level = if ("stage_order" %in% names(nodes)) suppressWarnings(as.numeric(.data$stage_order)) else NA_real_,
+        description = if (length(node_desc_col) > 0) as.character(.data[[node_desc_col[[1]]]]) else raw_label
+      ) %>%
+      mutate(
+        raw_label = coalesce(raw_label, id),
+        level = case_when(
+          raw_label %in% stage_order ~ as.numeric(match(raw_label, stage_order)),
+          !is.na(level) ~ level,
+          TRUE ~ as.numeric(row_number())
+        )
+      ) %>%
+      arrange(level)
+
+    if (nrow(node_base) == 0 || all(is.na(node_base$id))) {
+      node_base <- fallback_nodes
+      use_fallback <- TRUE
+    }
+  }
+
+  vis_nodes <- node_base %>%
+    mutate(
+      id = if_else(is.na(id) | !nzchar(id), paste0("causal_", row_number()), id),
+      raw_label = if_else(is.na(raw_label) | !nzchar(raw_label), id, raw_label),
+      label = str_wrap(raw_label, width = 18),
+      title = str_c(
+        "<b>", raw_label, "</b>",
+        if_else(!is.na(description) & nzchar(description), str_c("<br>", description), "")
+      ),
+      shape = "box",
+      color.background = "#f8fafc",
+      color.border = "#2f6f9f",
+      font.size = 18,
+      font.face = "bold",
+      font.color = "#17202a",
+      margin = 16,
+      widthConstraint.minimum = 170,
+      widthConstraint.maximum = 220
+    ) %>%
+    select(
+      id,
+      label,
+      level,
+      title,
+      shape,
+      color.background,
+      color.border,
+      font.size,
+      font.face,
+      font.color,
+      margin,
+      widthConstraint.minimum,
+      widthConstraint.maximum
+    )
+
+  edge_base <- tibble()
+
+  if (!use_fallback && has_rows(edges)) {
+    from_col <- intersect(c("from", "from_stage", "source"), names(edges))
+    to_col <- intersect(c("to", "to_stage", "target"), names(edges))
+
+    if (length(from_col) > 0 && length(to_col) > 0) {
+      edge_base <- edges %>%
+        transmute(
+          from = as.character(.data[[from_col[[1]]]]),
+          to = as.character(.data[[to_col[[1]]]])
+        ) %>%
+        filter(.data$from %in% vis_nodes$id, .data$to %in% vis_nodes$id)
+    }
+  }
+
+  if (!has_rows(edge_base)) {
+    edge_base <- tibble(
+      from = head(vis_nodes$id, -1),
+      to = tail(vis_nodes$id, -1)
+    )
+  }
+
+  vis_edges <- edge_base %>%
+    mutate(
       arrows = "to",
-      width = if ("weight" %in% names(.)) pmax(1, as.numeric(.data$weight)) else 1
+      width = 2,
+      smooth = FALSE,
+      title = "Causal sequence"
     )
 
   visNetwork(vis_nodes, vis_edges) %>%
-    visHierarchicalLayout(direction = "LR", sortMethod = "directed") %>%
-    visNodes(color = list(background = "#eef4f8", border = "#2f6f9f"), font = list(size = 18)) %>%
-    visEdges(smooth = TRUE, color = list(color = "#52616f")) %>%
+    visHierarchicalLayout(
+      direction = "LR",
+      sortMethod = "directed",
+      levelSeparation = 260,
+      nodeSpacing = 190,
+      treeSpacing = 240
+    ) %>%
+    visNodes(shapeProperties = list(borderRadius = 6)) %>%
+    visEdges(
+      arrows = list(to = list(enabled = TRUE, scaleFactor = 0.75)),
+      color = list(color = "#52616f", highlight = "#b42318"),
+      smooth = FALSE
+    ) %>%
+    visPhysics(enabled = FALSE) %>%
+    visInteraction(dragNodes = FALSE, dragView = TRUE, zoomView = TRUE) %>%
     visOptions(highlightNearest = TRUE, nodesIdSelection = FALSE)
 }
 
@@ -549,10 +857,32 @@ make_event_detail_table <- function(data) {
     ensure_table_cols(tibble(), useful_cols)
   }
 
+  table_data <- table_data %>%
+    mutate(
+      content = str_trunc(str_squish(as.character(.data$content)), 180),
+      anomaly_reason = str_trunc(str_squish(as.character(.data$anomaly_reason)), 140)
+    )
+
   DT::datatable(
     table_data,
     rownames = FALSE,
-    options = list(scrollX = TRUE, pageLength = 8)
+    filter = "top",
+    class = "display compact stripe tenantthread-table",
+    options = list(
+      scrollX = TRUE,
+      pageLength = 8,
+      autoWidth = TRUE,
+      searching = TRUE,
+      columnDefs = list(
+        list(width = "140px", targets = 0),
+        list(width = "130px", targets = 1),
+        list(width = "120px", targets = 2),
+        list(width = "130px", targets = 3),
+        list(width = "150px", targets = 4),
+        list(width = "220px", targets = 5),
+        list(width = "420px", targets = 6)
+      )
+    )
   )
 }
 
@@ -636,10 +966,36 @@ make_evidence_table <- function(data) {
     ensure_table_cols(tibble(), useful_cols)
   }
 
+  table_data <- table_data %>%
+    mutate(
+      content = str_trunc(str_squish(as.character(.data$content)), 180),
+      anomaly_reason = str_trunc(str_squish(as.character(.data$anomaly_reason)), 140)
+    )
+
   DT::datatable(
     table_data,
     rownames = FALSE,
     filter = "top",
-    options = list(scrollX = TRUE, pageLength = 8, autoWidth = TRUE)
+    class = "display compact stripe tenantthread-table",
+    options = list(
+      scrollX = TRUE,
+      pageLength = 8,
+      autoWidth = TRUE,
+      searching = TRUE,
+      columnDefs = list(
+        list(width = "140px", targets = 0),
+        list(width = "135px", targets = 1),
+        list(width = "120px", targets = 2),
+        list(width = "130px", targets = 3),
+        list(width = "120px", targets = 4),
+        list(width = "130px", targets = 5),
+        list(width = "150px", targets = 6),
+        list(width = "130px", targets = 7),
+        list(width = "170px", targets = 8),
+        list(width = "220px", targets = 9),
+        list(width = "430px", targets = 10),
+        list(width = "110px", targets = c(11, 12, 13))
+      )
+    )
   )
 }

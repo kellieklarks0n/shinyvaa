@@ -361,9 +361,23 @@ section_card <- function(title, ...) {
   )
 }
 
+case_bullet <- function(text) {
+  tags$li(text)
+}
+
+nav_guide_item <- function(title, text) {
+  div(
+    class = "nav-guide-item",
+    div(class = "nav-guide-title", title),
+    div(class = "nav-guide-text", text)
+  )
+}
+
 ui <- page_navbar(
-  title = "Embargo Breach: Tracing TenantThread's AI Crisis",
+  title = div(class = "navbar-app-title", "TenantThread AI Crisis"),
   theme = bs_theme(version = 5, bootswatch = "flatly"),
+  window_title = "Embargo Breach: Tracing TenantThread's AI Crisis",
+  navbar_options = navbar_options(collapsible = FALSE, underline = FALSE),
   header = tags$head(
     tags$link(rel = "stylesheet", type = "text/css", href = "styles.css")
   ),
@@ -371,30 +385,60 @@ ui <- page_navbar(
     "Landing Page / Overview",
     div(
       class = "page-shell",
+      div(
+        class = "overview-hero",
+        div(class = "overview-eyebrow", "TenantThread Case File"),
+        h1("Embargo Breach: Tracing TenantThread's AI Crisis"),
+        p("A visual analytics investigation into how embargo-sensitive information moved through automated agents, governance controls, and public-facing channels before the official release deadline.")
+      ),
       layout_columns(
         col_widths = c(7, 5),
         section_card(
           "Case Summary",
-          p("TenantThread's Project HarborCrest investigation centers on whether embargo-sensitive information escaped before the public deadline and how the information moved through internal, public, and monitored channels."),
-          p("This working version organizes the evidence into a timeline, agent network, and breach pathway so analysts can trace the crisis from early governance tension to the suspected release window.")
+          div(
+            class = "case-summary-list",
+            tags$ul(
+              case_bullet("TenantThread used automated communication agents and The Judge to manage communications."),
+              case_bullet("Project HarborCrest was a confidential CivicLoom merger."),
+              case_bullet("The official embargo deadline was 6:00 PM, June 5, 2046."),
+              case_bullet("Suspicious public release activity began around 5:00 PM."),
+              case_bullet("The app investigates whether this was deliberate leakage or a systemic breakdown.")
+            )
+          )
         ),
         section_card(
           "Identified Breach Window",
-          div(class = "breach-window", strong("Suspected release:"), " around 5:00 PM, June 5, 2046"),
-          div(class = "breach-window", strong("Embargo deadline:"), " 6:00 PM, June 5, 2046")
+          div(class = "breach-window breach-window-risk", strong("Suspected inappropriate release begins:"), " around 5:00 PM, June 5, 2046"),
+          div(class = "breach-window", strong("Embargo deadline:"), " 6:00 PM, June 5, 2046"),
+          p(
+            class = "breach-window-note",
+            "This one-hour gap is the key investigation window: it separates suspicious public activity from the authorized release time and frames the search for deliberate leakage or a systemic control breakdown."
+          )
         )
       ),
       div(
         class = "kpi-grid",
-        kpi_card(metric_value("total_rounds", nrow(rounds_features)), "Total Rounds"),
-        kpi_card(metric_value("total_messages", nrow(comms_features)), "Total Messages"),
-        kpi_card(metric_value("total_agents", length(unique(na.omit(comms_features$agent_clean)))), "Total Agents"),
-        kpi_card(metric_value("total_public_posts", if ("public_channel" %in% names(comms_features)) sum(comms_features$public_channel, na.rm = TRUE) else NA_integer_), "Total Public Posts"),
-        kpi_card(metric_value("total_anomalies", if ("anomaly_flag" %in% names(comms_features)) sum(comms_features$anomaly_flag, na.rm = TRUE) else NA_integer_), "Total Anomaly Messages")
+        kpi_card(metric_value("total_rounds", nrow(rounds_features)), "Rounds"),
+        kpi_card(metric_value("total_messages", nrow(comms_features)), "Messages"),
+        kpi_card(metric_value("total_agents", length(unique(na.omit(comms_features$agent_clean)))), "Agents"),
+        kpi_card(metric_value("total_public_posts", if ("public_channel" %in% names(comms_features)) sum(comms_features$public_channel, na.rm = TRUE) else NA_integer_), "Public posts"),
+        kpi_card(metric_value("total_anomalies", if ("anomaly_flag" %in% names(comms_features)) sum(comms_features$anomaly_flag, na.rm = TRUE) else NA_integer_), "Anomaly messages")
       ),
-      section_card(
-        "Investigation Phases",
-        plotlyOutput("phase_flow", height = "260px")
+      layout_columns(
+        col_widths = c(7, 5),
+        section_card(
+          "Investigation Phases",
+          div(class = "phase-flow-wrap", plotOutput("phase_flow", height = "330px"))
+        ),
+        section_card(
+          "Navigation Guide",
+          div(
+            class = "nav-guide",
+            nav_guide_item("Crisis Timeline", "Reconstructs the sequence of events."),
+            nav_guide_item("Agent Network", "Shows who communicated with whom and how communication patterns shifted."),
+            nav_guide_item("Embargo Breach Pathway", "Traces movement of embargo-sensitive information toward public release.")
+          )
+        )
       ),
       div(
         class = "instruction-note",
@@ -418,7 +462,11 @@ ui <- page_navbar(
           checkboxInput("timeline_show_anomaly", "Show anomaly events", value = TRUE)
         )
       ),
-      section_card("Interactive Crisis Timeline", plotlyOutput("crisis_timeline", height = "440px")),
+      section_card(
+        "Interactive Crisis Timeline",
+        div(class = "timeline-slider-note", "Use the range slider below the timeline to zoom into specific dates."),
+        plotlyOutput("crisis_timeline", height = "660px")
+      ),
       section_card("Round Context Panel", DTOutput("round_context_table")),
       section_card(
         "Embedded Comparison / Summary",
@@ -452,7 +500,7 @@ ui <- page_navbar(
       layout_columns(
         col_widths = c(8, 4),
         div(
-          section_card("Causal Chain Diagram", visNetworkOutput("causal_chain_network", height = "390px")),
+          section_card("Causal Chain Diagram", visNetworkOutput("causal_chain_network", height = "520px")),
           section_card("Interactive Agent Communication Network", visNetworkOutput("agent_network", height = "450px"))
         ),
         div(
@@ -496,12 +544,58 @@ ui <- page_navbar(
       section_card("Behaviour Comparison Panel", plotlyOutput("pathway_behavior_comparison", height = "360px")),
       section_card("Linked Evidence Table / Viewer", DTOutput("pathway_evidence_table"))
     )
+  ),
+  nav_spacer(),
+  nav_panel(
+    "User Guide",
+    div(
+      class = "page-shell user-guide-shell",
+      div(
+        class = "overview-hero user-guide-hero",
+        div(class = "overview-eyebrow", "How to Use This App"),
+        h1("User Guide"),
+        p("This application investigates whether TenantThread's embargo breach was caused by deliberate leakage or systemic breakdown.")
+      ),
+      layout_columns(
+        col_widths = c(6, 6),
+        section_card(
+          "Landing Page / Overview",
+          p("Review the case summary, KPI cards, breach window, and investigation phases before moving into the analytical tabs.")
+        ),
+        section_card(
+          "Crisis Timeline",
+          p("Use date, agent, channel, phase, keyword, and anomaly filters to narrow the events. Hover over timeline points for details, and use the range slider below the timeline to zoom into specific dates.")
+        ),
+        section_card(
+          "Agent Network",
+          p("Use focal agent, channel, phase, and keyword filters. Read the causal chain first, then use the agent network to inspect communication relationships. Use the linked table to inspect message-level evidence.")
+        ),
+        section_card(
+          "Embargo Breach Pathway",
+          p("Use pathway stage, channel risk, phase, keyword, and anomaly filters. Follow the information flow from sensitive internal discussion toward public release. Use Judge coverage and evidence tables to identify where controls weakened.")
+        )
+      ),
+      section_card(
+        "Interpretation Note",
+        p("The causal chain and pathway diagrams are investigative visual summaries based on message patterns and flagged evidence. They should be interpreted together with the linked evidence tables.")
+      ),
+      section_card(
+        "Suggested Investigation Workflow",
+        tags$ol(
+          tags$li("Start from Landing Page."),
+          tags$li("Use Crisis Timeline to understand when events happened."),
+          tags$li("Use Agent Network to understand who was involved."),
+          tags$li("Use Embargo Breach Pathway to trace how sensitive information moved toward public release."),
+          tags$li("Use evidence tables to support conclusions.")
+        )
+      )
+    )
   )
 )
 
 server <- function(input, output, session) {
-  output$phase_flow <- renderPlotly({
-    plotly_panel(plot_phase_flow())
+  output$phase_flow <- renderPlot({
+    plot_phase_flow()
   })
 
   # Crisis Timeline server logic
@@ -536,7 +630,7 @@ server <- function(input, output, session) {
   })
 
   output$crisis_timeline <- renderPlotly({
-    plotly_panel(plot_crisis_timeline(timeline_events_filtered(), input$timeline_show_anomaly), tooltip = "text")
+    build_crisis_timeline_plotly(timeline_events_filtered(), input$timeline_show_anomaly)
   })
 
   output$round_context_table <- renderDT({
