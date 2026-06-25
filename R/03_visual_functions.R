@@ -241,14 +241,30 @@ build_causal_chain_network <- function(nodes, edges) {
     return(visNetwork(data.frame(id = "empty", label = "No data available"), data.frame()))
   }
 
+  stage_order <- c(
+    "Governance concerns",
+    "Media escalation",
+    "Embargo sensitivity",
+    "Judge intervention",
+    "Side/private coordination",
+    "Public-facing release",
+    "Breach response"
+  )
+
   vis_nodes <- nodes %>%
     mutate(
       id = if ("id" %in% names(.)) as.character(.data$id) else as.character(.data$node_id),
       label = if ("label" %in% names(.)) as.character(.data$label) else as.character(.data$stage),
-      level = if ("stage_order" %in% names(.)) .data$stage_order else row_number(),
-      title = if ("stage" %in% names(.)) as.character(.data$stage) else label,
+      level = if ("stage_order" %in% names(.)) as.numeric(.data$stage_order) else as.numeric(row_number()),
+      level = if_else(label %in% stage_order, as.numeric(match(label, stage_order)), level),
+      title = str_c(
+        "<b>", label, "</b>",
+        "<br>Conceptual evidence stage for explaining crisis escalation.",
+        if ("description" %in% names(.)) str_c("<br>", .data$description) else ""
+      ),
       shape = "box"
     ) %>%
+    arrange(level) %>%
     select(id, label, level, title, shape)
 
   vis_edges <- edges %>%
@@ -261,13 +277,21 @@ build_causal_chain_network <- function(nodes, edges) {
 
   visNetwork(vis_nodes, vis_edges) %>%
     visHierarchicalLayout(direction = "LR", sortMethod = "directed") %>%
-    visEdges(smooth = TRUE) %>%
+    visNodes(color = list(background = "#eef4f8", border = "#2f6f9f"), font = list(size = 18)) %>%
+    visEdges(smooth = TRUE, color = list(color = "#52616f")) %>%
     visOptions(highlightNearest = TRUE, nodesIdSelection = FALSE)
 }
 
 build_agent_network <- function(nodes, edges) {
   if (!has_rows(nodes) || !has_rows(edges)) {
-    return(visNetwork(data.frame(id = "empty", label = "No data available"), data.frame()))
+    return(
+      visNetwork(
+        data.frame(id = "empty", label = "No communication links for selected filters", shape = "box"),
+        data.frame()
+      ) %>%
+        visNodes(color = list(background = "#f8fafc", border = "#cfd6df"), font = list(size = 16)) %>%
+        visOptions(highlightNearest = FALSE, nodesIdSelection = FALSE)
+    )
   }
 
   vis_nodes <- nodes %>%
@@ -275,13 +299,16 @@ build_agent_network <- function(nodes, edges) {
       id = if ("id" %in% names(.)) as.character(.data$id) else as.character(.data$agent_clean),
       label = if ("label" %in% names(.)) as.character(.data$label) else id,
       total_messages = if ("total_messages" %in% names(.)) coalesce(as.numeric(.data$total_messages), 1) else 1,
-      value = pmax(5, total_messages),
+      public_posts = if ("public_posts" %in% names(.)) coalesce(as.numeric(.data$public_posts), 0) else 0,
+      anomaly_count = if ("anomaly_count" %in% names(.)) coalesce(as.numeric(.data$anomaly_count), 0) else 0,
+      sensitive_count = if ("sensitive_count" %in% names(.)) coalesce(as.numeric(.data$sensitive_count), 0) else if ("sensitive_message_count" %in% names(.)) coalesce(as.numeric(.data$sensitive_message_count), 0) else 0,
+      value = pmin(34, pmax(18, sqrt(pmax(total_messages + anomaly_count, 1)) * 3.6)),
       title = str_c(
         "<b>", label, "</b>",
-        if ("total_messages" %in% names(.)) str_c("<br>Messages: ", comma(total_messages)) else "",
-        if ("public_posts" %in% names(.)) str_c("<br>Public posts: ", comma(.data$public_posts)) else "",
-        if ("anomaly_count" %in% names(.)) str_c("<br>Anomalies: ", comma(.data$anomaly_count)) else "",
-        if ("sensitive_count" %in% names(.)) str_c("<br>Sensitive messages: ", comma(.data$sensitive_count)) else ""
+        "<br>Total messages: ", comma(total_messages),
+        "<br>Public posts: ", comma(public_posts),
+        "<br>Anomaly count: ", comma(anomaly_count),
+        "<br>Sensitive message count: ", comma(sensitive_count)
       )
     ) %>%
     select(id, label, value, title)
@@ -291,21 +318,67 @@ build_agent_network <- function(nodes, edges) {
       from = if ("from" %in% names(.)) as.character(.data$from) else as.character(.data$from_agent),
       to = if ("to" %in% names(.)) as.character(.data$to) else as.character(.data$to_agent),
       weight = if ("weight" %in% names(.)) coalesce(as.numeric(.data$weight), 1) else 1,
-      width = pmax(1, sqrt(weight)),
+      from_agent = if ("from_agent" %in% names(.)) as.character(.data$from_agent) else from,
+      to_agent = if ("to_agent" %in% names(.)) as.character(.data$to_agent) else to,
+      channel = if ("channel" %in% names(.)) coalesce(as.character(.data$channel), "Unspecified") else "Unspecified",
+      crisis_phase = if ("crisis_phase" %in% names(.)) coalesce(as.character(.data$crisis_phase), "Unclassified") else "Unclassified",
+      channel_summary = if ("channel_summary" %in% names(.)) coalesce(as.character(.data$channel_summary), channel) else channel,
+      phase_summary = if ("phase_summary" %in% names(.)) coalesce(as.character(.data$phase_summary), crisis_phase) else crisis_phase,
+      width = pmin(4, pmax(0.8, log1p(pmax(weight, 1)) * 0.9)),
       title = str_c(
-        "Messages: ", comma(weight),
-        if ("channel_group" %in% names(.)) str_c("<br>Channel group: ", .data$channel_group) else "",
-        if ("channel_risk" %in% names(.)) str_c("<br>Risk: ", .data$channel_risk) else "",
-        if ("crisis_phase" %in% names(.)) str_c("<br>Phase: ", .data$crisis_phase) else ""
-      ),
-      arrows = "to"
+        "<b>", from_agent, " -> ", to_agent, "</b>",
+        "<br>from_agent: ", from_agent,
+        "<br>to_agent: ", to_agent,
+        "<br>channels: ", channel_summary,
+        "<br>crisis phases: ", phase_summary,
+        "<br>weight: ", comma(weight)
+      )
     ) %>%
-    select(from, to, width, title, arrows)
+    filter(!is.na(.data$from), !is.na(.data$to), .data$from != .data$to) %>%
+    select(from, to, width, title)
+
+  if (nrow(vis_edges) == 0) {
+    return(
+      visNetwork(
+        data.frame(id = "empty", label = "No communication links for selected filters", shape = "box"),
+        data.frame()
+      ) %>%
+        visNodes(color = list(background = "#f8fafc", border = "#cfd6df"), font = list(size = 16)) %>%
+        visOptions(highlightNearest = FALSE, nodesIdSelection = FALSE)
+    )
+  }
 
   visNetwork(vis_nodes, vis_edges) %>%
-    visEdges(smooth = TRUE) %>%
-    visOptions(highlightNearest = TRUE, nodesIdSelection = TRUE) %>%
-    visPhysics(stabilization = TRUE)
+    visLayout(randomSeed = 608, improvedLayout = TRUE) %>%
+    visNodes(
+      shape = "dot",
+      color = list(background = "#eef4f8", border = "#2f6f9f", highlight = list(background = "#dbeafe", border = "#1d4ed8")),
+      borderWidth = 2,
+      shadow = FALSE,
+      font = list(size = 22, face = "arial", color = "#1f2937", vadjust = 30)
+    ) %>%
+    visEdges(
+      smooth = FALSE,
+      arrows = list(to = list(enabled = TRUE, scaleFactor = 0.35)),
+      color = list(color = "#52616f", highlight = "#b42318")
+    ) %>%
+    visOptions(
+      highlightNearest = list(enabled = TRUE, degree = 1, hover = TRUE),
+      nodesIdSelection = TRUE
+    ) %>%
+    visPhysics(
+      solver = "forceAtlas2Based",
+      forceAtlas2Based = list(
+        gravitationalConstant = -120,
+        centralGravity = 0.005,
+        springLength = 260,
+        springConstant = 0.02,
+        avoidOverlap = 1
+      ),
+      stabilization = list(enabled = TRUE, iterations = 300),
+      minVelocity = 0.75
+    ) %>%
+    visEvents(stabilizationIterationsDone = "function () { this.setOptions({physics: false}); }")
 }
 
 plot_channel_distribution <- function(comms) {
@@ -404,8 +477,6 @@ plot_pathway_behavior_comparison <- function(pathway_evidence) {
 make_event_detail_table <- function(data) {
   useful_cols <- c(
     "timestamp",
-    "event_time",
-    "event_label",
     "agent_clean",
     "channel",
     "channel_group",
@@ -415,9 +486,9 @@ make_event_detail_table <- function(data) {
   )
 
   table_data <- if (is.data.frame(data)) {
-    data %>% select(any_of(useful_cols))
+    ensure_table_cols(data, useful_cols)
   } else {
-    tibble()
+    ensure_table_cols(tibble(), useful_cols)
   }
 
   DT::datatable(

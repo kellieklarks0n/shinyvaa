@@ -171,15 +171,16 @@ filter_network_edges <- function(edges, date_range, channel, crisis_phase, keywo
   data <- filter_date(edges, date_range)
   data <- filter_select(data, channel, "channel")
   data <- filter_select(data, crisis_phase, "crisis_phase")
-  data <- filter_keyword(data, keyword)
+  data <- filter_keyword(
+    data,
+    keyword,
+    cols = c("content", "message", "text", "from_agent", "to_agent", "channel", "channel_group", "crisis_phase")
+  )
 
   if (is.data.frame(data) && !is.null(focal_agent) && focal_agent != "All") {
     agent_cols <- intersect(c("from", "to", "from_agent", "to_agent", "agent_clean"), names(data))
     if (length(agent_cols) > 0) {
-      filtered <- data %>% filter(if_any(all_of(agent_cols), ~ as.character(.x) == focal_agent))
-      if (nrow(filtered) > 0) {
-        data <- filtered
-      }
+      data <- data %>% filter(if_any(all_of(agent_cols), ~ as.character(.x) == focal_agent))
     }
   }
 
@@ -206,6 +207,126 @@ filter_network_nodes <- function(nodes, edges) {
   node_id_col <- node_id_cols[[1]]
   filtered <- nodes %>% filter(as.character(.data[[node_id_col]]) %in% edge_agents)
   if (nrow(filtered) == 0) nodes else filtered
+}
+
+summarise_network_nodes <- function(nodes, comms, edges) {
+  nodes_filtered <- filter_network_nodes(nodes, edges)
+
+  if (!is.data.frame(nodes_filtered) || nrow(nodes_filtered) == 0) {
+    return(nodes_filtered)
+  }
+
+  node_id_cols <- intersect(c("id", "agent_clean", "label"), names(nodes_filtered))
+
+  if (length(node_id_cols) == 0 || !is.data.frame(comms) || !"agent_clean" %in% names(comms) || nrow(comms) == 0) {
+    return(nodes_filtered)
+  }
+
+  node_id_col <- node_id_cols[[1]]
+  public_col <- intersect(c("public_channel", "is_public", "public_post"), names(comms))
+  anomaly_cols <- intersect(c("anomaly_flag", "is_anomaly", "is_anomaly_event"), names(comms))
+  sensitive_cols <- intersect(c("embargo_sensitive", "crisis_sensitive", "sensitive_message", "is_sensitive"), names(comms))
+
+  summary <- comms %>%
+    mutate(agent_clean = as.character(.data$agent_clean))
+
+  summary$.public_post <- if (length(public_col) > 0) {
+    coalesce(as.logical(summary[[public_col[[1]]]]), FALSE)
+  } else {
+    FALSE
+  }
+
+  summary$.anomaly_message <- if (length(anomaly_cols) > 0) {
+    summary %>% transmute(.value = if_any(all_of(anomaly_cols), ~ coalesce(as.logical(.x), FALSE))) %>% pull(.value)
+  } else if ("anomaly_reason" %in% names(summary)) {
+    !is.na(summary$anomaly_reason) & nzchar(as.character(summary$anomaly_reason))
+  } else {
+    FALSE
+  }
+
+  summary$.sensitive_message <- if (length(sensitive_cols) > 0) {
+    summary %>% transmute(.value = if_any(all_of(sensitive_cols), ~ coalesce(as.logical(.x), FALSE))) %>% pull(.value)
+  } else {
+    FALSE
+  }
+
+  summary <- summary %>%
+    group_by(agent_clean) %>%
+    summarise(
+      total_messages = n(),
+      public_posts = sum(.data$.public_post, na.rm = TRUE),
+      anomaly_count = sum(.data$.anomaly_message, na.rm = TRUE),
+      sensitive_count = sum(.data$.sensitive_message, na.rm = TRUE),
+      .groups = "drop"
+    )
+
+  nodes_filtered %>%
+    select(-any_of(c("total_messages", "public_posts", "anomaly_count", "sensitive_count", "sensitive_message_count"))) %>%
+    mutate(.node_key = as.character(.data[[node_id_col]])) %>%
+    left_join(summary, by = c(".node_key" = "agent_clean")) %>%
+    mutate(
+      total_messages = coalesce(.data$total_messages, 0),
+      public_posts = coalesce(.data$public_posts, 0),
+      anomaly_count = coalesce(.data$anomaly_count, 0),
+      sensitive_count = coalesce(.data$sensitive_count, 0)
+    ) %>%
+    select(-.node_key)
+}
+
+aggregate_network_edges <- function(edges, max_detailed_edges = 30) {
+  if (!is.data.frame(edges) || nrow(edges) == 0) {
+    return(tibble())
+  }
+
+  edge_data <- edges %>%
+    mutate(
+      from_agent = if ("from_agent" %in% names(.)) as.character(.data$from_agent) else if ("from" %in% names(.)) as.character(.data$from) else NA_character_,
+      to_agent = if ("to_agent" %in% names(.)) as.character(.data$to_agent) else if ("to" %in% names(.)) as.character(.data$to) else NA_character_,
+      crisis_phase = if ("crisis_phase" %in% names(.)) coalesce(as.character(.data$crisis_phase), "Unclassified") else "Unclassified",
+      channel_display = if ("channel_group" %in% names(.)) coalesce(as.character(.data$channel_group), "Unspecified") else if ("channel" %in% names(.)) coalesce(as.character(.data$channel), "Unspecified") else "Unspecified",
+      interaction_count = if ("weight" %in% names(.)) coalesce(as.numeric(.data$weight), 1) else 1
+    ) %>%
+    filter(
+      !is.na(.data$from_agent),
+      !is.na(.data$to_agent),
+      nzchar(.data$from_agent),
+      nzchar(.data$to_agent),
+      .data$from_agent != .data$to_agent
+    )
+
+  if (nrow(edge_data) == 0) {
+    return(tibble())
+  }
+
+  detailed_edges <- edge_data %>%
+    group_by(from_agent, to_agent, crisis_phase, channel_display) %>%
+    summarise(weight = sum(.data$interaction_count, na.rm = TRUE), .groups = "drop") %>%
+    mutate(
+      from = .data$from_agent,
+      to = .data$to_agent,
+      channel = .data$channel_display,
+      channel_summary = .data$channel_display,
+      phase_summary = .data$crisis_phase
+    )
+
+  if (nrow(detailed_edges) <= max_detailed_edges) {
+    return(detailed_edges)
+  }
+
+  edge_data %>%
+    group_by(from_agent, to_agent) %>%
+    summarise(
+      weight = sum(.data$interaction_count, na.rm = TRUE),
+      channel_summary = paste(sort(unique(.data$channel_display)), collapse = ", "),
+      phase_summary = paste(sort(unique(.data$crisis_phase)), collapse = ", "),
+      .groups = "drop"
+    ) %>%
+    mutate(
+      from = .data$from_agent,
+      to = .data$to_agent,
+      channel = .data$channel_summary,
+      crisis_phase = .data$phase_summary
+    )
 }
 
 plotly_panel <- function(plot_obj, tooltip = NULL) {
@@ -314,25 +435,31 @@ ui <- page_navbar(
     "Agent Network",
     div(
       class = "page-shell",
-      layout_sidebar(
-        sidebar = sidebar(
+      section_card(
+        "Inputs / Filters",
+        div(
+          class = "agent-filter-grid",
           selectizeInput("network_focal_agent", "Focal agent", choices = agent_choices, selected = "All", multiple = FALSE),
           dateRangeInput("network_dates", "Date range", start = date_range[[1]], end = date_range[[2]], min = date_range[[1]], max = date_range[[2]]),
           selectizeInput("network_channels", "Channel", choices = channel_choices, selected = "All", multiple = TRUE),
           selectizeInput("network_phases", "Crisis phase", choices = phase_choices, selected = "All", multiple = TRUE),
-          textInput("network_keyword", "Keyword search"),
-          width = 320
+          textInput("network_keyword", "Keyword search")
+        )
+      ),
+      layout_columns(
+        col_widths = c(8, 4),
+        div(
+          section_card("Causal Chain Diagram", visNetworkOutput("causal_chain_network", height = "390px")),
+          section_card("Interactive Agent Communication Network", visNetworkOutput("agent_network", height = "450px"))
         ),
-        layout_columns(
-          col_widths = c(6, 6),
-          section_card("Causal Chain Diagram", visNetworkOutput("causal_chain_network", height = "420px")),
-          section_card("Agent Communication Network", visNetworkOutput("agent_network", height = "420px"))
-        ),
-        layout_columns(
-          section_card("Channel Distribution", plotlyOutput("channel_distribution", height = "330px")),
-          section_card("Network Comparison", plotlyOutput("network_comparison", height = "330px"))
-        ),
-        section_card("Linked Messages", DTOutput("network_message_table"))
+        div(
+          section_card("Channel Distribution Summary", plotlyOutput("channel_distribution", height = "310px")),
+          section_card("Linked Message Table", DTOutput("network_message_table"))
+        )
+      ),
+      section_card(
+        "Embedded Comparison Panel",
+        plotlyOutput("network_comparison", height = "360px")
       )
     )
   ),
@@ -417,12 +544,16 @@ server <- function(input, output, session) {
   })
 
   # Agent Network server logic
-  network_comms <- reactive({
+  network_comms_filtered <- reactive({
     data <- comms_features
     data <- filter_date(data, input$network_dates)
     data <- filter_select(data, input$network_channels, "channel")
     data <- filter_select(data, input$network_phases, "crisis_phase")
-    data <- filter_keyword(data, input$network_keyword)
+    data <- filter_keyword(
+      data,
+      input$network_keyword,
+      cols = c("content", "message", "text", "agent_clean", "channel", "channel_group", "crisis_phase", "anomaly_reason")
+    )
 
     if (!is.null(input$network_focal_agent) && input$network_focal_agent != "All") {
       data <- filter_select(data, input$network_focal_agent, "agent_clean")
@@ -442,26 +573,30 @@ server <- function(input, output, session) {
     )
   })
 
+  network_edges_aggregated <- reactive({
+    aggregate_network_edges(network_edges_filtered())
+  })
+
   output$causal_chain_network <- renderVisNetwork({
     build_causal_chain_network(causal_chain_nodes, causal_chain_edges)
   })
 
   output$agent_network <- renderVisNetwork({
-    edges <- network_edges_filtered()
-    nodes <- filter_network_nodes(network_nodes, edges)
+    edges <- network_edges_aggregated()
+    nodes <- summarise_network_nodes(network_nodes, network_comms_filtered(), edges)
     build_agent_network(nodes, edges)
   })
 
   output$channel_distribution <- renderPlotly({
-    plotly_panel(plot_channel_distribution(network_comms()))
+    plotly_panel(plot_channel_distribution(network_comms_filtered()))
   })
 
   output$network_comparison <- renderPlotly({
-    plotly_panel(plot_network_comparison(network_comms()))
+    plotly_panel(plot_network_comparison(network_comms_filtered()))
   })
 
   output$network_message_table <- renderDT({
-    make_event_detail_table(network_comms())
+    make_event_detail_table(network_comms_filtered())
   })
 
   # Embargo Breach Pathway server logic
