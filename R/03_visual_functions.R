@@ -27,6 +27,19 @@ available_cols <- function(data, cols) {
   intersect(cols, names(data))
 }
 
+ensure_table_cols <- function(data, cols) {
+  if (!is.data.frame(data)) {
+    data <- tibble()
+  }
+
+  missing_cols <- setdiff(cols, names(data))
+  for (col in missing_cols) {
+    data[[col]] <- if (nrow(data) == 0) character(0) else NA_character_
+  }
+
+  data %>% select(all_of(cols))
+}
+
 create_value_box_content <- function(value, subtitle) {
   if (requireNamespace("shiny", quietly = TRUE)) {
     return(
@@ -78,15 +91,20 @@ plot_crisis_timeline <- function(key_events, show_anomalies = FALSE) {
   timeline <- key_events %>%
     mutate(
       event_time = as.POSIXct(event_time, tz = "UTC"),
-      event_label = coalesce(as.character(.data$event_label), "Event"),
+      event_label = if ("event_label" %in% names(.)) coalesce(as.character(.data$event_label), "Event") else "Event",
       event_type = if ("event_type" %in% names(.)) coalesce(as.character(.data$event_type), "Event") else "Event",
+      crisis_phase = if ("crisis_phase" %in% names(.)) coalesce(as.character(.data$crisis_phase), "Unclassified") else "Unclassified",
+      event_headline = if ("event_headline" %in% names(.)) coalesce(as.character(.data$event_headline), "") else "",
+      event_narrative = if ("event_narrative" %in% names(.)) coalesce(as.character(.data$event_narrative), "") else "",
       is_anomaly_event = if ("is_anomaly_event" %in% names(.)) coalesce(.data$is_anomaly_event, FALSE) else FALSE,
-      y_value = event_type,
+      narrative_preview = str_trunc(str_squish(str_c(event_headline, event_narrative, sep = " ")), 180),
+      y_value = factor(event_type, levels = rev(unique(event_type))),
       tooltip = str_c(
         "<b>", event_label, "</b>",
         "<br>Time: ", format(event_time, "%Y-%m-%d %H:%M"),
         "<br>Type: ", event_type,
-        if ("crisis_phase" %in% names(.)) str_c("<br>Phase: ", .data$crisis_phase) else ""
+        "<br>Phase: ", crisis_phase,
+        if_else(nzchar(narrative_preview), str_c("<br>Context: ", narrative_preview), "")
       )
     ) %>%
     filter(!is.na(event_time))
@@ -112,9 +130,20 @@ plot_crisis_timeline <- function(key_events, show_anomalies = FALSE) {
     )
 
   suspected_release_time <- ymd_hms("2046-06-05 17:00:00", tz = "UTC")
+  suspected_release_start <- suspected_release_time - minutes(15)
+  suspected_release_end <- suspected_release_time + minutes(15)
   embargo_deadline <- ymd_hms("2046-06-05 18:00:00", tz = "UTC")
 
   ggplot(timeline, aes(x = event_time, y = y_value, text = tooltip)) +
+    annotate(
+      "rect",
+      xmin = suspected_release_start,
+      xmax = suspected_release_end,
+      ymin = -Inf,
+      ymax = Inf,
+      fill = "#f59e0b",
+      alpha = 0.12
+    ) +
     geom_vline(
       xintercept = suspected_release_time,
       linetype = "dashed",
@@ -127,7 +156,17 @@ plot_crisis_timeline <- function(key_events, show_anomalies = FALSE) {
       colour = "#b91c1c",
       linewidth = 0.55
     ) +
-    geom_point(aes(colour = anomaly_display), size = 3, alpha = 0.9) +
+    geom_point(aes(colour = anomaly_display, size = anomaly_display), alpha = 0.9) +
+    geom_point(
+      data = timeline %>% filter(anomaly_display),
+      shape = 21,
+      fill = "#fff7ed",
+      colour = "#b91c1c",
+      size = 5,
+      stroke = 1.2,
+      alpha = 0.95,
+      inherit.aes = TRUE
+    ) +
     geom_text(
       aes(label = label_to_show),
       hjust = -0.05,
@@ -141,12 +180,18 @@ plot_crisis_timeline <- function(key_events, show_anomalies = FALSE) {
       labels = c(`FALSE` = "Event", `TRUE` = "Anomaly"),
       name = NULL
     ) +
+    scale_size_manual(values = c(`FALSE` = 3, `TRUE` = 4.5), guide = "none") +
     scale_x_datetime(labels = label_date_short()) +
-    labs(x = NULL, y = NULL) +
+    labs(
+      x = NULL,
+      y = NULL,
+      caption = "Dashed marker: suspected breach window around 5:00 PM, June 5, 2046. Dotted marker: embargo deadline at 6:00 PM, June 5, 2046."
+    ) +
     theme_minimal(base_size = 12) +
     theme(
       legend.position = "bottom",
-      panel.grid.minor = element_blank()
+      panel.grid.minor = element_blank(),
+      plot.caption = element_text(colour = "#52616f", hjust = 0)
     )
 }
 
@@ -379,6 +424,62 @@ make_event_detail_table <- function(data) {
     table_data,
     rownames = FALSE,
     options = list(scrollX = TRUE, pageLength = 8)
+  )
+}
+
+make_round_context_table <- function(data) {
+  useful_cols <- c(
+    "event_time",
+    "event_label",
+    "event_headline",
+    "event_narrative",
+    "crisis_phase",
+    "event_type"
+  )
+
+  table_data <- if (is.data.frame(data)) {
+    ensure_table_cols(data, useful_cols) %>% distinct()
+  } else {
+    ensure_table_cols(tibble(), useful_cols)
+  }
+
+  DT::datatable(
+    table_data,
+    rownames = FALSE,
+    options = list(
+      scrollX = TRUE,
+      pageLength = 5,
+      autoWidth = TRUE
+    )
+  )
+}
+
+make_timeline_event_detail_table <- function(data) {
+  useful_cols <- c(
+    "timestamp",
+    "agent_clean",
+    "channel",
+    "channel_group",
+    "crisis_phase",
+    "anomaly_reason",
+    "content"
+  )
+
+  table_data <- if (is.data.frame(data)) {
+    ensure_table_cols(data, useful_cols)
+  } else {
+    ensure_table_cols(tibble(), useful_cols)
+  }
+
+  DT::datatable(
+    table_data,
+    rownames = FALSE,
+    filter = "top",
+    options = list(
+      scrollX = TRUE,
+      pageLength = 10,
+      autoWidth = TRUE
+    )
   )
 }
 

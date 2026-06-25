@@ -102,8 +102,7 @@ filter_select <- function(data, input_value, col) {
     return(data)
   }
 
-  filtered <- data %>% filter(as.character(.data[[col]]) %in% input_value)
-  if (nrow(filtered) == 0) data else filtered
+  data %>% filter(as.character(.data[[col]]) %in% input_value)
 }
 
 filter_date <- function(data, input_value, col = "timestamp") {
@@ -112,8 +111,7 @@ filter_date <- function(data, input_value, col = "timestamp") {
   }
 
   dates <- suppressWarnings(as.Date(data[[col]]))
-  filtered <- data[!is.na(dates) & dates >= input_value[[1]] & dates <= input_value[[2]], , drop = FALSE]
-  if (nrow(filtered) == 0) data else filtered
+  data[!is.na(dates) & dates >= input_value[[1]] & dates <= input_value[[2]], , drop = FALSE]
 }
 
 filter_keyword <- function(data, keyword, cols = c("content", "message", "text", "event_label", "anomaly_reason")) {
@@ -126,11 +124,28 @@ filter_keyword <- function(data, keyword, cols = c("content", "message", "text",
     return(data)
   }
 
-  pattern <- regex(str_squish(keyword), ignore_case = TRUE)
+  pattern <- fixed(str_squish(keyword), ignore_case = TRUE)
   filtered <- data %>%
     filter(if_any(all_of(search_cols), ~ str_detect(coalesce(as.character(.x), ""), pattern)))
 
-  if (nrow(filtered) == 0) data else filtered
+  filtered
+}
+
+filter_out_anomaly_events <- function(data) {
+  if (!is.data.frame(data) || nrow(data) == 0) {
+    return(data)
+  }
+
+  anomaly_cols <- intersect(c("is_anomaly_event", "is_anomaly", "anomaly_flag"), names(data))
+  if (length(anomaly_cols) > 0) {
+    return(data %>% filter(!if_any(all_of(anomaly_cols), ~ coalesce(as.logical(.x), FALSE))))
+  }
+
+  if ("anomaly_reason" %in% names(data)) {
+    return(data %>% filter(is.na(.data$anomaly_reason) | !nzchar(as.character(.data$anomaly_reason))))
+  }
+
+  data
 }
 
 filter_anomaly_only <- function(data) {
@@ -267,25 +282,31 @@ ui <- page_navbar(
     "Crisis Timeline",
     div(
       class = "page-shell",
-      layout_sidebar(
-        sidebar = sidebar(
+      section_card(
+        "Inputs / Filters",
+        div(
+          class = "timeline-filter-grid",
           dateRangeInput("timeline_dates", "Date range", start = date_range[[1]], end = date_range[[2]], min = date_range[[1]], max = date_range[[2]]),
           selectizeInput("timeline_agents", "Agent", choices = agent_choices, selected = "All", multiple = TRUE),
           selectizeInput("timeline_channels", "Channel", choices = channel_choices, selected = "All", multiple = TRUE),
           textInput("timeline_keyword", "Keyword search"),
           selectizeInput("timeline_phases", "Crisis phase", choices = phase_choices, selected = "All", multiple = TRUE),
-          checkboxInput("timeline_show_anomaly", "Show anomaly events", value = TRUE),
-          width = 320
-        ),
-        section_card("Interactive Timeline", plotlyOutput("crisis_timeline", height = "420px")),
-        layout_columns(
-          section_card("Round Context", DTOutput("round_context_table")),
-          section_card("Message Volume by Phase", plotlyOutput("message_volume_phase", height = "330px"))
-        ),
-        layout_columns(
-          section_card("Sensitive Keyword Counts", plotlyOutput("sensitive_keyword_counts", height = "330px")),
-          section_card("Linked Event Details", DTOutput("timeline_event_table"))
+          checkboxInput("timeline_show_anomaly", "Show anomaly events", value = TRUE)
         )
+      ),
+      section_card("Interactive Crisis Timeline", plotlyOutput("crisis_timeline", height = "440px")),
+      section_card("Round Context Panel", DTOutput("round_context_table")),
+      section_card(
+        "Embedded Comparison / Summary",
+        layout_columns(
+          col_widths = c(6, 6),
+          plotlyOutput("message_volume_phase", height = "330px"),
+          plotlyOutput("sensitive_keyword_counts", height = "330px")
+        )
+      ),
+      section_card(
+        "Linked Event Detail Table",
+        DTOutput("timeline_event_table")
       )
     )
   ),
@@ -345,48 +366,54 @@ server <- function(input, output, session) {
   })
 
   # Crisis Timeline server logic
-  timeline_comms <- reactive({
+  timeline_comms_filtered <- reactive({
     data <- comms_features
     data <- filter_date(data, input$timeline_dates)
     data <- filter_select(data, input$timeline_agents, "agent_clean")
     data <- filter_select(data, input$timeline_channels, "channel")
     data <- filter_select(data, input$timeline_phases, "crisis_phase")
-    filter_keyword(data, input$timeline_keyword)
-  })
-
-  timeline_events <- reactive({
-    data <- key_events
-    data <- filter_date(data, input$timeline_dates, "event_time")
-    data <- filter_select(data, input$timeline_agents, "agent_clean")
-    data <- filter_select(data, input$timeline_channels, "channel")
-    data <- filter_select(data, input$timeline_phases, "crisis_phase")
-    filter_keyword(data, input$timeline_keyword)
-  })
-
-  output$crisis_timeline <- renderPlotly({
-    plotly_panel(plot_crisis_timeline(timeline_events(), input$timeline_show_anomaly), tooltip = "text")
-  })
-
-  output$round_context_table <- renderDT({
-    context <- rounds_features
-    context <- filter_select(context, input$timeline_phases, "crisis_phase")
-    DT::datatable(
-      context,
-      rownames = FALSE,
-      options = list(scrollX = TRUE, pageLength = 8)
+    filter_keyword(
+      data,
+      input$timeline_keyword,
+      cols = c("content", "message", "text", "agent_clean", "channel", "channel_group", "crisis_phase", "anomaly_reason")
     )
   })
 
+  timeline_events_filtered <- reactive({
+    data <- key_events
+    data <- filter_date(data, input$timeline_dates, "event_time")
+    data <- filter_select(data, input$timeline_phases, "crisis_phase")
+    data <- filter_keyword(
+      data,
+      input$timeline_keyword,
+      cols = c("event_label", "event_type", "crisis_phase", "event_headline", "event_narrative", "anomaly_reason")
+    )
+
+    if (!isTRUE(input$timeline_show_anomaly)) {
+      data <- filter_out_anomaly_events(data)
+    }
+
+    data
+  })
+
+  output$crisis_timeline <- renderPlotly({
+    plotly_panel(plot_crisis_timeline(timeline_events_filtered(), input$timeline_show_anomaly), tooltip = "text")
+  })
+
+  output$round_context_table <- renderDT({
+    make_round_context_table(timeline_events_filtered())
+  })
+
   output$message_volume_phase <- renderPlotly({
-    plotly_panel(plot_message_volume_by_phase(timeline_comms()))
+    plotly_panel(plot_message_volume_by_phase(timeline_comms_filtered()))
   })
 
   output$sensitive_keyword_counts <- renderPlotly({
-    plotly_panel(plot_sensitive_keyword_counts(timeline_comms()))
+    plotly_panel(plot_sensitive_keyword_counts(timeline_comms_filtered()))
   })
 
   output$timeline_event_table <- renderDT({
-    make_event_detail_table(timeline_comms())
+    make_timeline_event_detail_table(timeline_comms_filtered())
   })
 
   # Agent Network server logic
