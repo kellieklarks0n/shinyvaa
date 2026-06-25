@@ -153,18 +153,21 @@ filter_anomaly_only <- function(data) {
     return(data)
   }
 
+  anomaly_match <- rep(FALSE, nrow(data))
   anomaly_cols <- intersect(c("is_anomaly", "is_anomaly_event", "anomaly_flag"), names(data))
   if (length(anomaly_cols) > 0) {
-    filtered <- data %>% filter(if_any(all_of(anomaly_cols), ~ coalesce(as.logical(.x), FALSE)))
-    return(if (nrow(filtered) == 0) data else filtered)
+    anomaly_match <- anomaly_match | (
+      data %>%
+        transmute(.match = if_any(all_of(anomaly_cols), ~ coalesce(as.logical(.x), FALSE))) %>%
+        pull(.match)
+    )
   }
 
   if ("anomaly_reason" %in% names(data)) {
-    filtered <- data %>% filter(!is.na(.data$anomaly_reason) & nzchar(as.character(.data$anomaly_reason)))
-    return(if (nrow(filtered) == 0) data else filtered)
+    anomaly_match <- anomaly_match | (!is.na(data$anomaly_reason) & nzchar(as.character(data$anomaly_reason)))
   }
 
-  data
+  data[anomaly_match, , drop = FALSE]
 }
 
 filter_network_edges <- function(edges, date_range, channel, crisis_phase, keyword, focal_agent) {
@@ -467,22 +470,31 @@ ui <- page_navbar(
     "Embargo Breach Pathway",
     div(
       class = "page-shell",
-      layout_sidebar(
-        sidebar = sidebar(
+      section_card(
+        "Inputs / Filters",
+        div(
+          class = "pathway-filter-grid",
           selectizeInput("pathway_stage", "Pathway stage", choices = safe_choices(pathway_evidence, "pathway_stage"), selected = "All", multiple = TRUE),
           textInput("pathway_keyword", "Keyword search"),
           selectizeInput("pathway_channel_risk", "Channel risk", choices = safe_choices(pathway_evidence, "channel_risk"), selected = "All", multiple = TRUE),
           selectizeInput("pathway_phases", "Crisis phase", choices = safe_choices(pathway_evidence, "crisis_phase"), selected = "All", multiple = TRUE),
-          checkboxInput("pathway_anomaly_only", "Anomaly-only", value = FALSE),
-          width = 320
+          checkboxInput("pathway_anomaly_only", "Anomaly-only", value = FALSE)
+        )
+      ),
+      layout_columns(
+        col_widths = c(7, 5),
+        section_card(
+          "Embargo Breach Pathway / Response Chain",
+          visNetworkOutput("breach_pathway_network", height = "470px")
         ),
-        section_card("Embargo-Sensitive Information Flow", visNetworkOutput("breach_pathway_network", height = "430px")),
-        layout_columns(
-          section_card("Judge Coverage Summary", plotlyOutput("judge_coverage", height = "330px")),
-          section_card("Pathway Behaviour Comparison", plotlyOutput("pathway_behavior_comparison", height = "330px"))
-        ),
-        section_card("Linked Evidence", DTOutput("pathway_evidence_table"))
-      )
+        section_card(
+          "Embedded Risk Summary",
+          uiOutput("pathway_risk_counts"),
+          plotlyOutput("judge_coverage", height = "330px")
+        )
+      ),
+      section_card("Behaviour Comparison Panel", plotlyOutput("pathway_behavior_comparison", height = "360px")),
+      section_card("Linked Evidence Table / Viewer", DTOutput("pathway_evidence_table"))
     )
   )
 )
@@ -600,12 +612,18 @@ server <- function(input, output, session) {
   })
 
   # Embargo Breach Pathway server logic
-  pathway_filtered <- reactive({
+  # Filters evidence records that trace movement from internal sensitivity through weak controls to public breach.
+  pathway_evidence_filtered <- reactive({
     data <- pathway_evidence
+
     data <- filter_select(data, input$pathway_stage, "pathway_stage")
+    data <- filter_keyword(
+      data,
+      input$pathway_keyword,
+      cols = c("content", "anomaly_reason", "pathway_stage", "agent_clean")
+    )
     data <- filter_select(data, input$pathway_channel_risk, "channel_risk")
     data <- filter_select(data, input$pathway_phases, "crisis_phase")
-    data <- filter_keyword(data, input$pathway_keyword)
 
     if (isTRUE(input$pathway_anomaly_only)) {
       data <- filter_anomaly_only(data)
@@ -618,16 +636,69 @@ server <- function(input, output, session) {
     build_breach_pathway_network(breach_pathway_nodes, breach_pathway_edges)
   })
 
+  output$pathway_risk_counts <- renderUI({
+    data <- pathway_evidence_filtered()
+
+    if (!is.data.frame(data) || nrow(data) == 0) {
+      return(div(class = "risk-summary-empty", "No evidence records match the selected filters."))
+    }
+
+    status_counts <- if ("judge_monitored_status" %in% names(data)) {
+      data %>%
+        count(judge_monitored_status, name = "records") %>%
+        mutate(judge_monitored_status = coalesce(as.character(.data$judge_monitored_status), "Unclassified"))
+    } else {
+      tibble(judge_monitored_status = "Unavailable", records = nrow(data))
+    }
+
+    anomaly_count <- 0L
+    if ("anomaly_flag" %in% names(data)) {
+      anomaly_count <- sum(coalesce(as.logical(data$anomaly_flag), FALSE), na.rm = TRUE)
+    }
+    if ("anomaly_reason" %in% names(data)) {
+      anomaly_count <- max(
+        anomaly_count,
+        sum(!is.na(data$anomaly_reason) & nzchar(as.character(data$anomaly_reason)), na.rm = TRUE)
+      )
+    }
+
+    div(
+      class = "risk-summary",
+      div(
+        class = "risk-summary-metric",
+        div(class = "risk-summary-value", comma(nrow(data))),
+        div(class = "risk-summary-label", "Filtered evidence records")
+      ),
+      div(
+        class = "risk-summary-metric",
+        div(class = "risk-summary-value", comma(anomaly_count)),
+        div(class = "risk-summary-label", "Anomaly records")
+      ),
+      tags$div(
+        class = "risk-summary-status",
+        tags$div(class = "risk-summary-status-title", "Judge monitoring status"),
+        tags$ul(
+          lapply(seq_len(nrow(status_counts)), function(i) {
+            tags$li(
+              tags$span(status_counts$judge_monitored_status[[i]]),
+              tags$strong(comma(status_counts$records[[i]]))
+            )
+          })
+        )
+      )
+    )
+  })
+
   output$judge_coverage <- renderPlotly({
-    plotly_panel(plot_judge_coverage(pathway_filtered()))
+    plotly_panel(plot_judge_coverage(pathway_evidence_filtered()))
   })
 
   output$pathway_behavior_comparison <- renderPlotly({
-    plotly_panel(plot_pathway_behavior_comparison(pathway_filtered()))
+    plotly_panel(plot_pathway_behavior_comparison(pathway_evidence_filtered()))
   })
 
   output$pathway_evidence_table <- renderDT({
-    make_evidence_table(pathway_filtered())
+    make_evidence_table(pathway_evidence_filtered())
   })
 }
 

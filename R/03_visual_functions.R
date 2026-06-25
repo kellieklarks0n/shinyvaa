@@ -417,18 +417,68 @@ build_breach_pathway_network <- function(nodes, edges) {
     return(visNetwork(data.frame(id = "empty", label = "No data available"), data.frame()))
   }
 
+  stage_order <- c(
+    "Sensitive internal discussion",
+    "Side/private coordination",
+    "Weak or late enforcement",
+    "Public-facing post",
+    "Embargo breach"
+  )
+
   vis_nodes <- nodes %>%
     mutate(
       id = if ("id" %in% names(.)) as.character(.data$id) else as.character(.data$node_id),
-      label = if ("label" %in% names(.)) as.character(.data$label) else as.character(.data$stage),
-      level = if ("stage_order" %in% names(.)) .data$stage_order else row_number(),
+      .stage = if ("stage" %in% names(.)) as.character(.data$stage) else NA_character_,
+      .stage_order = if ("stage_order" %in% names(.)) as.integer(.data$stage_order) else NA_integer_,
+      label = if ("label" %in% names(.)) as.character(.data$label) else coalesce(.stage, id),
+      level = case_when(
+        label %in% stage_order ~ match(label, stage_order),
+        .stage %in% stage_order ~ match(.stage, stage_order),
+        !is.na(.stage_order) ~ .stage_order,
+        TRUE ~ row_number()
+      ),
       title = str_c(
         "<b>", label, "</b>",
         if ("description" %in% names(.)) str_c("<br>", .data$description) else ""
       ),
-      shape = "box"
+      shape = "box",
+      color.background = case_when(
+        level == 1 ~ "#e8f2f8",
+        level == 2 ~ "#eef4e7",
+        level == 3 ~ "#fff4d8",
+        level == 4 ~ "#fbe7df",
+        level >= 5 ~ "#f7d7d7",
+        TRUE ~ "#edf2f7"
+      ),
+      color.border = case_when(
+        level == 1 ~ "#2f6f9f",
+        level == 2 ~ "#5f8f4e",
+        level == 3 ~ "#b7791f",
+        level == 4 ~ "#c05621",
+        level >= 5 ~ "#b42318",
+        TRUE ~ "#667085"
+      ),
+      font.size = 18,
+      font.face = "bold",
+      margin = 14,
+      widthConstraint.minimum = 150,
+      widthConstraint.maximum = 190
     ) %>%
-    select(id, label, level, title, shape)
+    arrange(level) %>%
+    select(
+      id,
+      label,
+      level,
+      title,
+      shape,
+      color.background,
+      color.border,
+      font.size,
+      font.face,
+      margin,
+      widthConstraint.minimum,
+      widthConstraint.maximum
+    )
 
   vis_edges <- edges %>%
     transmute(
@@ -439,8 +489,16 @@ build_breach_pathway_network <- function(nodes, edges) {
     )
 
   visNetwork(vis_nodes, vis_edges) %>%
-    visHierarchicalLayout(direction = "LR", sortMethod = "directed") %>%
-    visEdges(smooth = TRUE) %>%
+    visHierarchicalLayout(
+      direction = "LR",
+      sortMethod = "directed",
+      levelSeparation = 230,
+      nodeSpacing = 180,
+      treeSpacing = 220
+    ) %>%
+    visNodes(shapeProperties = list(borderRadius = 6)) %>%
+    visEdges(smooth = list(type = "cubicBezier", forceDirection = "horizontal"), color = list(color = "#667085")) %>%
+    visPhysics(enabled = FALSE) %>%
     visOptions(highlightNearest = TRUE, nodesIdSelection = FALSE)
 }
 
@@ -561,22 +619,27 @@ make_evidence_table <- function(data) {
     "message_id",
     "agent_clean",
     "channel",
+    "channel_group",
     "crisis_phase",
     "channel_risk",
+    "judge_monitored_status",
     "anomaly_reason",
     "content",
-    "deliberating"
+    "deliberating",
+    "rationalizing",
+    "reacting"
   )
 
   table_data <- if (is.data.frame(data)) {
-    data %>% select(any_of(useful_cols))
+    ensure_table_cols(data, useful_cols)
   } else {
-    tibble()
+    ensure_table_cols(tibble(), useful_cols)
   }
 
   DT::datatable(
     table_data,
     rownames = FALSE,
-    options = list(scrollX = TRUE, pageLength = 8)
+    filter = "top",
+    options = list(scrollX = TRUE, pageLength = 8, autoWidth = TRUE)
   )
 }
