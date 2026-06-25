@@ -111,15 +111,18 @@ plot_crisis_timeline <- function(key_events, show_anomalies = FALSE) {
       anomaly_display = if (show_anomalies) is_anomaly_event else FALSE
     )
 
+  suspected_release_time <- ymd_hms("2046-06-05 17:00:00", tz = "UTC")
+  embargo_deadline <- ymd_hms("2046-06-05 18:00:00", tz = "UTC")
+
   ggplot(timeline, aes(x = event_time, y = y_value, text = tooltip)) +
     geom_vline(
-      xintercept = as.numeric(ymd_hms("2046-06-05 17:00:00", tz = "UTC")),
+      xintercept = suspected_release_time,
       linetype = "dashed",
       colour = "#d97706",
       linewidth = 0.45
     ) +
     geom_vline(
-      xintercept = as.numeric(ymd_hms("2046-06-05 18:00:00", tz = "UTC")),
+      xintercept = embargo_deadline,
       linetype = "dotted",
       colour = "#b91c1c",
       linewidth = 0.55
