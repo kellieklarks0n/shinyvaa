@@ -553,7 +553,8 @@ ui <- page_navbar(
               ),
               selectizeInput("network_channels", "Channel", choices = channel_choices, selected = "All", multiple = TRUE),
               selectizeInput("network_phases", "Crisis phase", choices = phase_choices, selected = "All", multiple = TRUE),
-              textInput("network_keyword", "Keyword search")
+              textInput("network_keyword", "Keyword search"),
+              checkboxInput("network_show_message_table", "Show Linked Message Table", value = FALSE)
             ),
             class = "compact-card filter-sidebar-card"
           )
@@ -561,16 +562,22 @@ ui <- page_navbar(
         div(
           class = "main-dashboard-area network-dashboard-area",
           div(
-            class = "dashboard-card-grid network-main-grid",
-            section_card("Causal Chain Diagram", visNetworkOutput("causal_chain_network", height = "100%"), class = "chart-card"),
-            section_card("Channel Distribution Summary", plotlyOutput("channel_distribution", height = "100%"), class = "chart-card compact-card"),
-            section_card("Interactive Agent Communication Network", visNetworkOutput("agent_network", height = "100%"), class = "chart-card"),
-            section_card("Linked Message Table", DTOutput("network_message_table"), class = "table-card compact-card")
-          ),
-          section_card(
-            "Embedded Comparison Panel",
-            plotlyOutput("network_comparison", height = "100%"),
-            class = "chart-card compact-card"
+            class = "dashboard-card-grid network-main-grid agent-network-main-grid",
+            section_card("Causal Chain Diagram", visNetworkOutput("causal_chain_network", height = "100%"), class = "chart-card compact-card network-causal-card"),
+            section_card("Interactive Agent Communication Network", visNetworkOutput("agent_network", height = "100%"), class = "chart-card network-star-card agent-network-visual-card"),
+            div(
+              class = "network-support-column agent-network-support-column",
+              section_card("Channel Distribution Summary", plotlyOutput("channel_distribution", height = "100%"), class = "chart-card compact-card network-support-card support-chart-card"),
+              section_card(
+                "Embedded Comparison Panel",
+                plotlyOutput("network_comparison", height = "100%"),
+                class = "chart-card compact-card network-support-card support-chart-card"
+              ),
+              conditionalPanel(
+                condition = "input.network_show_message_table",
+                section_card("Linked Message Table", DTOutput("network_message_table"), class = "table-card compact-card network-message-card scroll-card")
+              )
+            )
           )
         )
       )

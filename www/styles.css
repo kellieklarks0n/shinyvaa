@@ -236,7 +236,7 @@ body {
 }
 
 .network-dashboard-area {
-  grid-template-rows: minmax(0, 1fr) minmax(190px, 0.36fr);
+  grid-template-rows: minmax(0, 1fr);
 }
 
 .pathway-dashboard-area {
@@ -289,9 +289,86 @@ body {
   height: 100%;
 }
 
-.network-main-grid {
-  grid-template-columns: minmax(460px, 1.35fr) minmax(330px, 0.8fr);
-  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+.network-main-grid,
+.agent-network-main-grid {
+  grid-template-columns: minmax(650px, 2.2fr) minmax(430px, 1fr);
+  grid-template-rows: 148px minmax(0, 1fr);
+  height: 100%;
+}
+
+.network-causal-card {
+  grid-column: 1 / -1;
+  min-height: 0;
+}
+
+.network-causal-card .card-header {
+  padding-bottom: 7px;
+  padding-top: 7px;
+}
+
+.network-causal-card .card-body {
+  padding: 8px 10px;
+}
+
+.network-star-card,
+.agent-network-visual-card {
+  min-height: 0;
+}
+
+.network-star-card .card-header {
+  background: #f7fbfd;
+  border-bottom-color: #d4e5ef;
+  color: #12384f;
+  font-size: 1.08rem;
+}
+
+.network-star-card .card-body {
+  padding: 10px;
+}
+
+.network-support-column,
+.agent-network-support-column {
+  display: grid;
+  gap: 14px;
+  grid-auto-rows: minmax(220px, 0.75fr);
+  grid-template-rows: minmax(240px, 0.9fr) minmax(280px, 1.1fr);
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.network-support-card,
+.support-chart-card,
+.network-message-card {
+  min-height: 0;
+  width: 100%;
+}
+
+.support-chart-card .card-body {
+  padding: 10px 12px 12px;
+}
+
+.support-chart-card .html-widget,
+.support-chart-card .plotly {
+  width: 100% !important;
+}
+
+.network-message-card .card-body {
+  overflow: auto;
+}
+
+.network-support-column > .shiny-panel-conditional {
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.network-support-column > .shiny-panel-conditional:empty {
+  display: none;
+}
+
+.network-support-column > .shiny-panel-conditional > .dashboard-card {
+  height: 100%;
 }
 
 .pathway-main-grid {
@@ -928,6 +1005,27 @@ table.dataTable tbody td {
   vertical-align: top;
 }
 
+@media (max-width: 1500px) {
+  .network-main-grid,
+  .agent-network-main-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: 138px minmax(430px, 1fr) minmax(280px, auto);
+  }
+
+  .network-support-column,
+  .agent-network-support-column {
+    grid-auto-rows: minmax(240px, auto);
+    grid-template-columns: repeat(2, minmax(330px, 1fr));
+    grid-template-rows: minmax(260px, auto);
+    overflow: visible;
+  }
+
+  .network-support-column > .shiny-panel-conditional {
+    grid-column: 1 / -1;
+    min-height: 260px;
+  }
+}
+
 @media (max-width: 1100px) {
   .landing-dashboard {
     height: auto;
@@ -967,6 +1065,7 @@ table.dataTable tbody td {
   .dashboard-card-grid,
   .timeline-support-grid,
   .network-main-grid,
+  .network-support-column,
   .pathway-main-grid {
     display: grid;
     grid-template-columns: 1fr;

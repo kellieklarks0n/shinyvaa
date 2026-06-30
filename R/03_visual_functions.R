@@ -586,8 +586,8 @@ build_causal_chain_network <- function(nodes, edges) {
       smooth = FALSE
     ) %>%
     visPhysics(enabled = FALSE) %>%
-    visInteraction(dragNodes = FALSE, dragView = TRUE, zoomView = TRUE) %>%
-    visOptions(highlightNearest = TRUE, nodesIdSelection = FALSE)
+    visInteraction(dragNodes = FALSE, dragView = FALSE, zoomView = FALSE) %>%
+    visOptions(highlightNearest = FALSE, nodesIdSelection = FALSE)
 }
 
 build_agent_network <- function(nodes, edges) {
@@ -696,13 +696,18 @@ plot_channel_distribution <- function(comms) {
 
   comms %>%
     count(channel_group, name = "messages") %>%
-    ggplot(aes(x = reorder(channel_group, messages), y = messages)) +
+    mutate(channel_label = str_wrap(as.character(.data$channel_group), width = 24)) %>%
+    ggplot(aes(x = reorder(channel_label, messages), y = messages)) +
     geom_col(fill = "#2f6f9f", width = 0.72) +
     coord_flip() +
-    scale_y_continuous(labels = comma) +
+    scale_y_continuous(labels = comma, expand = expansion(mult = c(0, 0.08))) +
     labs(x = NULL, y = "Messages") +
     theme_minimal(base_size = 12) +
-    theme(panel.grid.minor = element_blank())
+    theme(
+      axis.text.y = element_text(lineheight = 0.95),
+      panel.grid.minor = element_blank(),
+      plot.margin = margin(8, 18, 12, 8)
+    )
 }
 
 plot_network_comparison <- function(comms) {
@@ -712,12 +717,21 @@ plot_network_comparison <- function(comms) {
 
   comms %>%
     count(crisis_phase, channel_risk, name = "messages") %>%
-    ggplot(aes(x = crisis_phase, y = messages, fill = channel_risk)) +
+    mutate(crisis_phase_label = str_wrap(as.character(.data$crisis_phase), width = 22)) %>%
+    ggplot(aes(x = crisis_phase_label, y = messages, fill = channel_risk)) +
     geom_col(position = "dodge", width = 0.72) +
-    scale_y_continuous(labels = comma) +
+    coord_flip() +
+    scale_y_continuous(labels = comma, expand = expansion(mult = c(0, 0.1))) +
     labs(x = NULL, y = "Messages", fill = "Channel risk") +
     theme_minimal(base_size = 12) +
-    theme(axis.text.x = element_text(angle = 25, hjust = 1), panel.grid.minor = element_blank())
+    theme(
+      axis.text.y = element_text(lineheight = 0.95),
+      legend.position = "bottom",
+      legend.title = element_text(size = 10),
+      legend.text = element_text(size = 9),
+      panel.grid.minor = element_blank(),
+      plot.margin = margin(8, 18, 14, 8)
+    )
 }
 
 build_breach_pathway_network <- function(nodes, edges) {
