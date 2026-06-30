@@ -372,8 +372,67 @@ body {
 }
 
 .pathway-main-grid {
-  grid-template-columns: minmax(470px, 1.2fr) minmax(360px, 0.95fr);
-  grid-template-rows: minmax(0, 1fr) minmax(220px, 0.72fr);
+  grid-template-columns: minmax(430px, 1fr) minmax(430px, 1fr);
+  grid-template-rows: 138px minmax(0, 1fr);
+  grid-auto-rows: minmax(190px, 0.72fr);
+  height: 100%;
+  overflow: hidden;
+}
+
+.pathway-strip-card {
+  grid-column: 1 / -1;
+  min-height: 0;
+}
+
+.pathway-strip-card .card-header {
+  padding-bottom: 7px;
+  padding-top: 7px;
+}
+
+.pathway-strip-card .card-body {
+  padding: 6px 10px;
+}
+
+.pathway-strip-card .vis-network {
+  min-height: 0;
+}
+
+.pathway-risk-card,
+.pathway-behavior-card,
+.pathway-evidence-card {
+  min-height: 0;
+}
+
+.pathway-risk-card {
+  grid-column: 1 / 2;
+  grid-row: 2 / 3;
+}
+
+.pathway-behavior-card {
+  grid-column: 2 / 3;
+  grid-row: 2 / 3;
+}
+
+.pathway-evidence-card {
+  grid-column: 1 / -1;
+  grid-row: 3 / 4;
+}
+
+.pathway-main-grid > .shiny-panel-conditional {
+  display: contents;
+}
+
+.pathway-main-grid > .shiny-panel-conditional:empty {
+  display: none;
+}
+
+.pathway-evidence-card .card-body {
+  overflow: auto;
+  padding: 10px;
+}
+
+.pathway-evidence-card .dataTables_wrapper {
+  min-width: 980px;
 }
 
 .section-card,

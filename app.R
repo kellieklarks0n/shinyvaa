@@ -599,7 +599,8 @@ ui <- page_navbar(
               textInput("pathway_keyword", "Keyword search"),
               selectizeInput("pathway_channel_risk", "Channel risk", choices = safe_choices(pathway_evidence, "channel_risk"), selected = "All", multiple = TRUE),
               selectizeInput("pathway_phases", "Crisis phase", choices = safe_choices(pathway_evidence, "crisis_phase"), selected = "All", multiple = TRUE),
-              checkboxInput("pathway_anomaly_only", "Anomaly-only", value = FALSE)
+              checkboxInput("pathway_anomaly_only", "Anomaly-only", value = FALSE),
+              checkboxInput("pathway_show_evidence_table", "Show Linked Evidence Table", value = FALSE)
             ),
             class = "compact-card filter-sidebar-card"
           )
@@ -611,16 +612,19 @@ ui <- page_navbar(
             section_card(
               "Embargo Breach Pathway / Response Chain",
               visNetworkOutput("breach_pathway_network", height = "100%"),
-              class = "chart-card"
+              class = "chart-card compact-card pathway-strip-card"
             ),
             section_card(
               "Embedded Risk Summary",
               uiOutput("pathway_risk_counts"),
               plotlyOutput("judge_coverage", height = "100%"),
-              class = "chart-card compact-card"
+              class = "chart-card compact-card pathway-risk-card"
             ),
-            section_card("Behaviour Comparison Panel", plotlyOutput("pathway_behavior_comparison", height = "100%"), class = "chart-card compact-card"),
-            section_card("Linked Evidence Table / Viewer", DTOutput("pathway_evidence_table"), class = "table-card compact-card")
+            section_card("Behaviour Comparison Panel", plotlyOutput("pathway_behavior_comparison", height = "100%"), class = "chart-card compact-card pathway-behavior-card"),
+            conditionalPanel(
+              condition = "input.pathway_show_evidence_table",
+              section_card("Linked Evidence Table / Viewer", DTOutput("pathway_evidence_table"), class = "table-card compact-card pathway-evidence-card scroll-card")
+            )
           )
         )
       )

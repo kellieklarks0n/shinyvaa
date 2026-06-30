@@ -809,11 +809,11 @@ build_breach_pathway_network <- function(nodes, edges) {
         level >= 5 ~ "#b42318",
         TRUE ~ "#667085"
       ),
-      font.size = 18,
+      font.size = 13,
       font.face = "bold",
-      margin = 14,
-      widthConstraint.minimum = 150,
-      widthConstraint.maximum = 190
+      margin = 8,
+      widthConstraint.minimum = 118,
+      widthConstraint.maximum = 158
     ) %>%
     arrange(level) %>%
     select(
@@ -843,14 +843,19 @@ build_breach_pathway_network <- function(nodes, edges) {
     visHierarchicalLayout(
       direction = "LR",
       sortMethod = "directed",
-      levelSeparation = 230,
-      nodeSpacing = 180,
-      treeSpacing = 220
+      levelSeparation = 165,
+      nodeSpacing = 70,
+      treeSpacing = 90
     ) %>%
     visNodes(shapeProperties = list(borderRadius = 6)) %>%
-    visEdges(smooth = list(type = "cubicBezier", forceDirection = "horizontal"), color = list(color = "#667085")) %>%
+    visEdges(
+      arrows = list(to = list(scaleFactor = 0.7)),
+      smooth = list(type = "cubicBezier", forceDirection = "horizontal", roundness = 0.25),
+      color = list(color = "#667085")
+    ) %>%
     visPhysics(enabled = FALSE) %>%
-    visOptions(highlightNearest = TRUE, nodesIdSelection = FALSE)
+    visInteraction(dragNodes = FALSE, dragView = FALSE, zoomView = FALSE) %>%
+    visOptions(highlightNearest = FALSE, nodesIdSelection = FALSE)
 }
 
 plot_judge_coverage <- function(pathway_evidence) {
