@@ -353,9 +353,9 @@ kpi_card <- function(value, label) {
   )
 }
 
-section_card <- function(title, ...) {
+section_card <- function(title, ..., class = NULL) {
   card(
-    class = "section-card",
+    class = paste(c("section-card", "dashboard-card", class), collapse = " "),
     card_header(title),
     ...
   )
@@ -384,165 +384,211 @@ ui <- page_navbar(
   nav_panel(
     "Landing Page / Overview",
     div(
-      class = "page-shell",
+      class = "page-shell landing-dashboard",
       div(
-        class = "overview-hero",
+        class = "overview-hero compact-overview-hero",
         div(class = "overview-eyebrow", "TenantThread Case File"),
         h1("Embargo Breach: Tracing TenantThread's AI Crisis"),
         p("A visual analytics investigation into how embargo-sensitive information moved through automated agents, governance controls, and public-facing channels before the official release deadline.")
       ),
-      layout_columns(
-        col_widths = c(7, 5),
-        section_card(
-          "Case Summary",
-          div(
-            class = "case-summary-list",
-            tags$ul(
-              case_bullet("TenantThread used automated communication agents and The Judge to manage communications."),
-              case_bullet("Project HarborCrest was a confidential CivicLoom merger."),
-              case_bullet("The official embargo deadline was 6:00 PM, June 5, 2046."),
-              case_bullet("Suspicious public release activity began around 5:00 PM."),
-              case_bullet("The app investigates whether this was deliberate leakage or a systemic breakdown.")
-            )
+      div(
+        class = "landing-dashboard-grid",
+        div(
+          class = "landing-left-column",
+          section_card(
+            "Case Summary",
+            div(
+              class = "case-summary-list",
+              tags$ul(
+                case_bullet("TenantThread used automated communication agents and The Judge to manage communications."),
+                case_bullet("Project HarborCrest was a confidential CivicLoom merger."),
+                case_bullet("The official embargo deadline was 6:00 PM, June 5, 2046."),
+                case_bullet("Suspicious public release activity began around 5:00 PM."),
+                case_bullet("The app investigates whether this was deliberate leakage or a systemic breakdown.")
+              )
+            ),
+            class = "compact-overview-card"
+          ),
+          section_card(
+            "Identified Breach Window",
+            div(class = "breach-window breach-window-risk", strong("Suspected inappropriate release begins:"), " around 5:00 PM, June 5, 2046"),
+            div(class = "breach-window", strong("Embargo deadline:"), " 6:00 PM, June 5, 2046"),
+            p(
+              class = "breach-window-note",
+              "This one-hour gap is the key investigation window: it separates suspicious public activity from the authorized release time and frames the search for deliberate leakage or a systemic control breakdown."
+            ),
+            class = "compact-overview-card breach-overview-card"
+          ),
+          section_card(
+            "Navigation Guide",
+            div(
+              class = "nav-guide compact-nav-guide",
+              nav_guide_item("Crisis Timeline", "Reconstructs the sequence of events."),
+              nav_guide_item("Agent Network", "Shows who communicated with whom and how communication patterns shifted."),
+              nav_guide_item("Embargo Breach Pathway", "Traces movement of embargo-sensitive information toward public release.")
+            ),
+            class = "compact-overview-card"
           )
         ),
-        section_card(
-          "Identified Breach Window",
-          div(class = "breach-window breach-window-risk", strong("Suspected inappropriate release begins:"), " around 5:00 PM, June 5, 2046"),
-          div(class = "breach-window", strong("Embargo deadline:"), " 6:00 PM, June 5, 2046"),
-          p(
-            class = "breach-window-note",
-            "This one-hour gap is the key investigation window: it separates suspicious public activity from the authorized release time and frames the search for deliberate leakage or a systemic control breakdown."
-          )
-        )
-      ),
-      div(
-        class = "kpi-grid",
-        kpi_card(metric_value("total_rounds", nrow(rounds_features)), "Rounds"),
-        kpi_card(metric_value("total_messages", nrow(comms_features)), "Messages"),
-        kpi_card(metric_value("total_agents", length(unique(na.omit(comms_features$agent_clean)))), "Agents"),
-        kpi_card(metric_value("total_public_posts", if ("public_channel" %in% names(comms_features)) sum(comms_features$public_channel, na.rm = TRUE) else NA_integer_), "Public posts"),
-        kpi_card(metric_value("total_anomalies", if ("anomaly_flag" %in% names(comms_features)) sum(comms_features$anomaly_flag, na.rm = TRUE) else NA_integer_), "Anomaly messages")
-      ),
-      layout_columns(
-        col_widths = c(7, 5),
-        section_card(
-          "Investigation Phases",
-          div(class = "phase-flow-wrap", plotOutput("phase_flow", height = "330px"))
-        ),
-        section_card(
-          "Navigation Guide",
+        div(
+          class = "landing-right-column",
+          section_card(
+            "Case Metrics",
+            div(
+              class = "kpi-grid compact-kpi-grid",
+              kpi_card(metric_value("total_rounds", nrow(rounds_features)), "Rounds"),
+              kpi_card(metric_value("total_messages", nrow(comms_features)), "Messages"),
+              kpi_card(metric_value("total_agents", length(unique(na.omit(comms_features$agent_clean)))), "Agents"),
+              kpi_card(metric_value("total_public_posts", if ("public_channel" %in% names(comms_features)) sum(comms_features$public_channel, na.rm = TRUE) else NA_integer_), "Public posts"),
+              kpi_card(metric_value("total_anomalies", if ("anomaly_flag" %in% names(comms_features)) sum(comms_features$anomaly_flag, na.rm = TRUE) else NA_integer_), "Anomaly messages")
+            ),
+            class = "compact-overview-card"
+          ),
+          section_card(
+            "Investigation Phases",
+            div(class = "phase-flow-wrap compact-phase-flow-wrap", plotOutput("phase_flow", height = "190px")),
+            class = "compact-overview-card phase-overview-card"
+          ),
           div(
-            class = "nav-guide",
-            nav_guide_item("Crisis Timeline", "Reconstructs the sequence of events."),
-            nav_guide_item("Agent Network", "Shows who communicated with whom and how communication patterns shifted."),
-            nav_guide_item("Embargo Breach Pathway", "Traces movement of embargo-sensitive information toward public release.")
+            class = "instruction-note compact-instruction-note",
+            "Continue to the Crisis Timeline, Agent Network, and Embargo Breach Pathway tabs to inspect the evidence from temporal, relational, and causal perspectives."
           )
         )
-      ),
-      div(
-        class = "instruction-note",
-        "Continue to the Crisis Timeline, Agent Network, and Embargo Breach Pathway tabs to inspect the evidence from temporal, relational, and causal perspectives."
       )
     )
   ),
   nav_panel(
     "Crisis Timeline",
     div(
-      class = "page-shell",
-      section_card(
-        "Inputs / Filters",
+      class = "page-shell dashboard-tab",
+      div(
+        class = "dashboard-layout",
         div(
-          class = "timeline-filter-grid",
-          dateRangeInput("timeline_dates", "Date range", start = date_range[[1]], end = date_range[[2]], min = date_range[[1]], max = date_range[[2]]),
-          selectizeInput("timeline_agents", "Agent", choices = agent_choices, selected = "All", multiple = TRUE),
-          selectizeInput("timeline_channels", "Channel", choices = channel_choices, selected = "All", multiple = TRUE),
-          textInput("timeline_keyword", "Keyword search"),
-          selectizeInput("timeline_phases", "Crisis phase", choices = phase_choices, selected = "All", multiple = TRUE),
-          checkboxInput("timeline_show_anomaly", "Show anomaly events", value = TRUE)
+          class = "filter-sidebar",
+          section_card(
+            "Inputs / Filters",
+            div(
+              class = "timeline-filter-grid",
+              dateRangeInput("timeline_dates", "Date range", start = date_range[[1]], end = date_range[[2]], min = date_range[[1]], max = date_range[[2]]),
+              selectizeInput("timeline_agents", "Agent", choices = agent_choices, selected = "All", multiple = TRUE),
+              selectizeInput("timeline_channels", "Channel", choices = channel_choices, selected = "All", multiple = TRUE),
+              textInput("timeline_keyword", "Keyword search"),
+              selectizeInput("timeline_phases", "Crisis phase", choices = phase_choices, selected = "All", multiple = TRUE),
+              checkboxInput("timeline_show_anomaly", "Show anomaly events", value = TRUE)
+            ),
+            class = "compact-card"
+          )
+        ),
+        div(
+          class = "main-dashboard-area timeline-dashboard-area",
+          section_card(
+            "Interactive Crisis Timeline",
+            div(class = "timeline-slider-note", "Use the range slider below the timeline to zoom into specific dates."),
+            plotlyOutput("crisis_timeline", height = "100%"),
+            class = "chart-card timeline-chart-card"
+          ),
+          div(
+            class = "dashboard-card-grid timeline-support-grid",
+            section_card("Round Context Panel", DTOutput("round_context_table"), class = "table-card compact-card"),
+            section_card(
+              "Embedded Comparison / Summary",
+              layout_columns(
+                col_widths = c(6, 6),
+                plotlyOutput("message_volume_phase", height = "100%"),
+                plotlyOutput("sensitive_keyword_counts", height = "100%")
+              ),
+              class = "chart-card compact-card"
+            ),
+            section_card(
+              "Linked Event Detail Table",
+              DTOutput("timeline_event_table"),
+              class = "table-card compact-card"
+            )
+          )
         )
-      ),
-      section_card(
-        "Interactive Crisis Timeline",
-        div(class = "timeline-slider-note", "Use the range slider below the timeline to zoom into specific dates."),
-        plotlyOutput("crisis_timeline", height = "660px")
-      ),
-      section_card("Round Context Panel", DTOutput("round_context_table")),
-      section_card(
-        "Embedded Comparison / Summary",
-        layout_columns(
-          col_widths = c(6, 6),
-          plotlyOutput("message_volume_phase", height = "330px"),
-          plotlyOutput("sensitive_keyword_counts", height = "330px")
-        )
-      ),
-      section_card(
-        "Linked Event Detail Table",
-        DTOutput("timeline_event_table")
       )
     )
   ),
   nav_panel(
     "Agent Network",
     div(
-      class = "page-shell",
-      section_card(
-        "Inputs / Filters",
+      class = "page-shell dashboard-tab",
+      div(
+        class = "dashboard-layout",
         div(
-          class = "agent-filter-grid",
-          selectizeInput("network_focal_agent", "Focal agent", choices = agent_choices, selected = "All", multiple = FALSE),
-          dateRangeInput("network_dates", "Date range", start = date_range[[1]], end = date_range[[2]], min = date_range[[1]], max = date_range[[2]]),
-          selectizeInput("network_channels", "Channel", choices = channel_choices, selected = "All", multiple = TRUE),
-          selectizeInput("network_phases", "Crisis phase", choices = phase_choices, selected = "All", multiple = TRUE),
-          textInput("network_keyword", "Keyword search")
-        )
-      ),
-      layout_columns(
-        col_widths = c(8, 4),
-        div(
-          section_card("Causal Chain Diagram", visNetworkOutput("causal_chain_network", height = "520px")),
-          section_card("Interactive Agent Communication Network", visNetworkOutput("agent_network", height = "450px"))
+          class = "filter-sidebar",
+          section_card(
+            "Inputs / Filters",
+            div(
+              class = "agent-filter-grid",
+              selectizeInput("network_focal_agent", "Focal agent", choices = agent_choices, selected = "All", multiple = FALSE),
+              dateRangeInput("network_dates", "Date range", start = date_range[[1]], end = date_range[[2]], min = date_range[[1]], max = date_range[[2]]),
+              selectizeInput("network_channels", "Channel", choices = channel_choices, selected = "All", multiple = TRUE),
+              selectizeInput("network_phases", "Crisis phase", choices = phase_choices, selected = "All", multiple = TRUE),
+              textInput("network_keyword", "Keyword search")
+            ),
+            class = "compact-card"
+          )
         ),
         div(
-          section_card("Channel Distribution Summary", plotlyOutput("channel_distribution", height = "310px")),
-          section_card("Linked Message Table", DTOutput("network_message_table"))
+          class = "main-dashboard-area network-dashboard-area",
+          div(
+            class = "dashboard-card-grid network-main-grid",
+            section_card("Causal Chain Diagram", visNetworkOutput("causal_chain_network", height = "100%"), class = "chart-card"),
+            section_card("Channel Distribution Summary", plotlyOutput("channel_distribution", height = "100%"), class = "chart-card compact-card"),
+            section_card("Interactive Agent Communication Network", visNetworkOutput("agent_network", height = "100%"), class = "chart-card"),
+            section_card("Linked Message Table", DTOutput("network_message_table"), class = "table-card compact-card")
+          ),
+          section_card(
+            "Embedded Comparison Panel",
+            plotlyOutput("network_comparison", height = "100%"),
+            class = "chart-card compact-card"
+          )
         )
-      ),
-      section_card(
-        "Embedded Comparison Panel",
-        plotlyOutput("network_comparison", height = "360px")
       )
     )
   ),
   nav_panel(
     "Embargo Breach Pathway",
     div(
-      class = "page-shell",
-      section_card(
-        "Inputs / Filters",
+      class = "page-shell dashboard-tab",
+      div(
+        class = "dashboard-layout",
         div(
-          class = "pathway-filter-grid",
-          selectizeInput("pathway_stage", "Pathway stage", choices = safe_choices(pathway_evidence, "pathway_stage"), selected = "All", multiple = TRUE),
-          textInput("pathway_keyword", "Keyword search"),
-          selectizeInput("pathway_channel_risk", "Channel risk", choices = safe_choices(pathway_evidence, "channel_risk"), selected = "All", multiple = TRUE),
-          selectizeInput("pathway_phases", "Crisis phase", choices = safe_choices(pathway_evidence, "crisis_phase"), selected = "All", multiple = TRUE),
-          checkboxInput("pathway_anomaly_only", "Anomaly-only", value = FALSE)
-        )
-      ),
-      layout_columns(
-        col_widths = c(7, 5),
-        section_card(
-          "Embargo Breach Pathway / Response Chain",
-          visNetworkOutput("breach_pathway_network", height = "470px")
+          class = "filter-sidebar",
+          section_card(
+            "Inputs / Filters",
+            div(
+              class = "pathway-filter-grid",
+              selectizeInput("pathway_stage", "Pathway stage", choices = safe_choices(pathway_evidence, "pathway_stage"), selected = "All", multiple = TRUE),
+              textInput("pathway_keyword", "Keyword search"),
+              selectizeInput("pathway_channel_risk", "Channel risk", choices = safe_choices(pathway_evidence, "channel_risk"), selected = "All", multiple = TRUE),
+              selectizeInput("pathway_phases", "Crisis phase", choices = safe_choices(pathway_evidence, "crisis_phase"), selected = "All", multiple = TRUE),
+              checkboxInput("pathway_anomaly_only", "Anomaly-only", value = FALSE)
+            ),
+            class = "compact-card"
+          )
         ),
-        section_card(
-          "Embedded Risk Summary",
-          uiOutput("pathway_risk_counts"),
-          plotlyOutput("judge_coverage", height = "330px")
+        div(
+          class = "main-dashboard-area pathway-dashboard-area",
+          div(
+            class = "dashboard-card-grid pathway-main-grid",
+            section_card(
+              "Embargo Breach Pathway / Response Chain",
+              visNetworkOutput("breach_pathway_network", height = "100%"),
+              class = "chart-card"
+            ),
+            section_card(
+              "Embedded Risk Summary",
+              uiOutput("pathway_risk_counts"),
+              plotlyOutput("judge_coverage", height = "100%"),
+              class = "chart-card compact-card"
+            ),
+            section_card("Behaviour Comparison Panel", plotlyOutput("pathway_behavior_comparison", height = "100%"), class = "chart-card compact-card"),
+            section_card("Linked Evidence Table / Viewer", DTOutput("pathway_evidence_table"), class = "table-card compact-card")
+          )
         )
-      ),
-      section_card("Behaviour Comparison Panel", plotlyOutput("pathway_behavior_comparison", height = "360px")),
-      section_card("Linked Evidence Table / Viewer", DTOutput("pathway_evidence_table"))
+      )
     )
   ),
   nav_spacer(),

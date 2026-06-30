@@ -63,7 +63,7 @@ plot_phase_flow <- function() {
       "Embargo-sensitive",
       "Breach / response"
     ),
-    phase_label = str_wrap(phase, width = 10),
+    phase_label = str_wrap(phase, width = 12),
     x = seq(1, by = 2.85, length.out = length(phase)),
     y = 1
   )
@@ -71,7 +71,7 @@ plot_phase_flow <- function() {
   ggplot(phases, aes(x = x, y = y)) +
     geom_tile(
       width = 2.2,
-      height = 0.72,
+      height = 0.66,
       fill = "#f8fafc",
       colour = "#9aa6b2",
       linewidth = 0.45
@@ -79,21 +79,21 @@ plot_phase_flow <- function() {
     geom_text(
       aes(label = phase_label),
       colour = "#17202a",
-      size = 3.9,
+      size = 3.45,
       fontface = "bold",
       lineheight = 0.95
     ) +
     geom_segment(
       data = phases %>% filter(x < max(x)),
-      aes(x = x + 1.15, xend = x + 1.68, y = y, yend = y),
-      arrow = arrow(length = unit(0.22, "cm"), type = "closed"),
+      aes(x = x + 1.14, xend = x + 1.7, y = y, yend = y),
+      arrow = arrow(length = unit(0.18, "cm"), type = "closed"),
       inherit.aes = FALSE,
       colour = "#52616f",
       linewidth = 0.75,
       lineend = "round"
     ) +
     scale_x_continuous(limits = c(-0.25, max(phases$x) + 1.25), expand = expansion(mult = 0.01)) +
-    scale_y_continuous(limits = c(0.45, 1.55), expand = expansion(mult = 0)) +
+    scale_y_continuous(limits = c(0.52, 1.48), expand = expansion(mult = 0)) +
     theme_void()
 }
 

@@ -89,6 +89,118 @@ body {
   padding: 24px 28px 36px;
 }
 
+.landing-dashboard {
+  display: grid;
+  gap: 12px;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: calc(100vh - 76px);
+  max-width: none;
+  overflow: hidden;
+  padding: 14px 18px 18px;
+}
+
+.landing-dashboard-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(500px, 0.95fr) minmax(540px, 1.05fr);
+  min-height: 0;
+}
+
+.landing-left-column,
+.landing-right-column {
+  display: grid;
+  gap: 12px;
+  min-height: 0;
+}
+
+.landing-left-column {
+  grid-template-rows: minmax(170px, auto) minmax(120px, auto) minmax(150px, 1fr);
+}
+
+.landing-right-column {
+  grid-template-rows: minmax(145px, auto) minmax(230px, 1fr) auto;
+}
+
+.compact-overview-card {
+  margin-bottom: 0;
+  overflow: hidden;
+}
+
+.compact-overview-card .card-header {
+  font-size: 0.94rem;
+  padding: 9px 13px;
+}
+
+.compact-overview-card .card-body {
+  padding: 12px 14px;
+}
+
+.dashboard-tab {
+  height: calc(100vh - 76px);
+  max-width: none;
+  overflow: hidden;
+  padding: 14px 18px 18px;
+}
+
+.dashboard-layout {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 300px minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+}
+
+.filter-sidebar,
+.main-dashboard-area {
+  min-height: 0;
+  min-width: 0;
+}
+
+.filter-sidebar {
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
+.main-dashboard-area {
+  display: grid;
+  gap: 14px;
+  overflow: hidden;
+}
+
+.timeline-dashboard-area {
+  grid-template-rows: minmax(250px, 0.9fr) minmax(260px, 1fr);
+}
+
+.network-dashboard-area {
+  grid-template-rows: minmax(0, 1fr) minmax(190px, 0.36fr);
+}
+
+.pathway-dashboard-area {
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.dashboard-card-grid {
+  display: grid;
+  gap: 14px;
+  min-height: 0;
+  min-width: 0;
+}
+
+.timeline-support-grid {
+  grid-template-columns: minmax(260px, 0.8fr) minmax(360px, 1.05fr) minmax(340px, 1fr);
+}
+
+.network-main-grid {
+  grid-template-columns: minmax(460px, 1.35fr) minmax(330px, 0.8fr);
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.pathway-main-grid {
+  grid-template-columns: minmax(470px, 1.2fr) minmax(360px, 0.95fr);
+  grid-template-rows: minmax(0, 1fr) minmax(220px, 0.72fr);
+}
+
 .section-card,
 .card {
   background: #ffffff;
@@ -96,6 +208,67 @@ body {
   border-radius: 8px;
   box-shadow: 0 1px 2px rgba(31, 41, 51, 0.035);
   margin-bottom: 18px;
+}
+
+.dashboard-tab .dashboard-card {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.dashboard-tab .card-header {
+  flex: 0 0 auto;
+}
+
+.dashboard-tab .card-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.compact-card .card-header {
+  font-size: 0.94rem;
+  padding: 10px 13px;
+}
+
+.compact-card .card-body {
+  padding: 12px;
+}
+
+.chart-card .card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chart-card .bslib-grid {
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+}
+
+.chart-card .bslib-grid > * {
+  min-height: 0;
+}
+
+.chart-card .html-widget,
+.chart-card .shiny-plot-output,
+.chart-card .plotly,
+.chart-card .vis-network {
+  flex: 1 1 auto;
+  height: 100% !important;
+  min-height: 0;
+  width: 100% !important;
+}
+
+.table-card .card-body {
+  overflow: auto;
+}
+
+.table-card .dataTables_wrapper {
+  min-width: 620px;
 }
 
 .card-header {
@@ -121,6 +294,11 @@ body {
   padding: 26px 28px;
 }
 
+.compact-overview-hero {
+  margin-bottom: 0;
+  padding: 14px 18px;
+}
+
 .overview-eyebrow {
   color: #52616f;
   font-size: 0.78rem;
@@ -139,12 +317,25 @@ body {
   max-width: 960px;
 }
 
+.compact-overview-hero h1 {
+  font-size: clamp(1.65rem, 2.6vw, 2.35rem);
+  line-height: 1.05;
+  max-width: none;
+}
+
 .overview-hero p {
   color: #3f4d5a;
   font-size: 1.02rem;
   line-height: 1.55;
   margin: 14px 0 0;
   max-width: 920px;
+}
+
+.compact-overview-hero p {
+  font-size: 0.94rem;
+  line-height: 1.35;
+  margin-top: 7px;
+  max-width: 1120px;
 }
 
 .case-summary-list ul {
@@ -162,11 +353,27 @@ body {
   padding: 3px 0 3px 12px;
 }
 
+.landing-dashboard .case-summary-list ul {
+  gap: 7px;
+}
+
+.landing-dashboard .case-summary-list li {
+  font-size: 0.93rem;
+  line-height: 1.32;
+  padding: 2px 0 2px 10px;
+}
+
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(140px, 1fr));
   gap: 14px;
   margin: 18px 0;
+}
+
+.compact-kpi-grid {
+  grid-template-columns: repeat(3, minmax(120px, 1fr));
+  gap: 9px;
+  margin: 0;
 }
 
 .kpi-card {
@@ -179,11 +386,20 @@ body {
   box-shadow: 0 1px 2px rgba(31, 41, 51, 0.035);
 }
 
+.compact-kpi-grid .kpi-card {
+  min-height: 68px;
+  padding: 10px 12px;
+}
+
 .kpi-value {
   color: #0f1720;
   font-size: 2rem;
   font-weight: 800;
   line-height: 1.1;
+}
+
+.compact-kpi-grid .kpi-value {
+  font-size: 1.48rem;
 }
 
 .kpi-label {
@@ -194,12 +410,23 @@ body {
   text-transform: uppercase;
 }
 
+.compact-kpi-grid .kpi-label {
+  font-size: 0.72rem;
+  margin-top: 4px;
+}
+
 .breach-window {
   background: #f8fafc;
   border: 1px solid #e5e9f0;
   border-radius: 6px;
   margin-bottom: 10px;
   padding: 12px 14px;
+}
+
+.landing-dashboard .breach-window {
+  font-size: 0.92rem;
+  margin-bottom: 7px;
+  padding: 8px 10px;
 }
 
 .breach-window-risk {
@@ -212,13 +439,32 @@ body {
   margin: 12px 0 0;
 }
 
+.landing-dashboard .breach-window-note {
+  font-size: 0.88rem;
+  line-height: 1.32;
+  margin-top: 7px;
+}
+
 .phase-flow-wrap {
   min-height: 250px;
+}
+
+.compact-phase-flow-wrap {
+  min-height: 0;
+  height: 100%;
+}
+
+.compact-phase-flow-wrap .shiny-plot-output {
+  height: 100% !important;
 }
 
 .nav-guide {
   display: grid;
   gap: 12px;
+}
+
+.compact-nav-guide {
+  gap: 8px;
 }
 
 .nav-guide-item {
@@ -228,15 +474,29 @@ body {
   padding: 13px 14px;
 }
 
+.compact-nav-guide .nav-guide-item {
+  padding: 9px 11px;
+}
+
 .nav-guide-title {
   color: #0f1720;
   font-weight: 800;
   margin-bottom: 4px;
 }
 
+.compact-nav-guide .nav-guide-title {
+  font-size: 0.92rem;
+  margin-bottom: 2px;
+}
+
 .nav-guide-text {
   color: #40505e;
   line-height: 1.45;
+}
+
+.compact-nav-guide .nav-guide-text {
+  font-size: 0.88rem;
+  line-height: 1.28;
 }
 
 .instruction-note {
@@ -249,6 +509,13 @@ body {
   padding: 14px 16px;
 }
 
+.compact-instruction-note {
+  font-size: 0.88rem;
+  line-height: 1.32;
+  margin-top: 0;
+  padding: 9px 12px;
+}
+
 .timeline-slider-note {
   background: #f8fafc;
   border: 1px solid #e5e9f0;
@@ -258,6 +525,13 @@ body {
   font-weight: 700;
   margin-bottom: 12px;
   padding: 10px 12px;
+}
+
+.dashboard-tab .timeline-slider-note {
+  flex: 0 0 auto;
+  font-size: 0.86rem;
+  margin-bottom: 0;
+  padding: 8px 10px;
 }
 
 .user-guide-shell .section-card p,
@@ -320,6 +594,27 @@ body {
   padding-top: 24px;
 }
 
+.filter-sidebar .timeline-filter-grid,
+.filter-sidebar .agent-filter-grid,
+.filter-sidebar .pathway-filter-grid {
+  align-items: stretch;
+  grid-template-columns: 1fr;
+}
+
+.filter-sidebar .timeline-filter-grid,
+.filter-sidebar .agent-filter-grid,
+.filter-sidebar .pathway-filter-grid {
+  gap: 10px;
+}
+
+.filter-sidebar .checkbox {
+  padding-top: 2px;
+}
+
+.filter-sidebar .shiny-input-container {
+  font-size: 0.92rem;
+}
+
 .risk-summary {
   display: grid;
   gap: 12px;
@@ -372,6 +667,21 @@ body {
 
 .risk-summary-status li:first-child {
   border-top: 0;
+}
+
+.dashboard-tab .risk-summary {
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.dashboard-tab .risk-summary-metric,
+.dashboard-tab .risk-summary-status,
+.dashboard-tab .risk-summary-empty {
+  padding: 10px 12px;
+}
+
+.dashboard-tab .risk-summary-value {
+  font-size: 1.35rem;
 }
 
 .sidebar {
@@ -437,6 +747,52 @@ table.dataTable tbody td {
 }
 
 @media (max-width: 1100px) {
+  .landing-dashboard {
+    height: auto;
+    overflow: visible;
+  }
+
+  .landing-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-left-column,
+  .landing-right-column {
+    grid-template-rows: none;
+  }
+
+  .dashboard-tab {
+    height: auto;
+    overflow: visible;
+  }
+
+  .dashboard-layout {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .main-dashboard-area,
+  .timeline-dashboard-area,
+  .network-dashboard-area,
+  .pathway-dashboard-area,
+  .dashboard-card-grid,
+  .timeline-support-grid,
+  .network-main-grid,
+  .pathway-main-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+  }
+
+  .dashboard-tab .dashboard-card {
+    min-height: 320px;
+  }
+
+  .dashboard-tab .filter-sidebar .dashboard-card,
+  .dashboard-tab .table-card {
+    min-height: 0;
+  }
+
   .kpi-grid {
     grid-template-columns: repeat(2, minmax(160px, 1fr));
   }
