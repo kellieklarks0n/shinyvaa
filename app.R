@@ -719,11 +719,11 @@ server <- function(input, output, session) {
   })
 
   output$message_volume_phase <- renderPlotly({
-    plotly_panel(plot_message_volume_by_phase(timeline_comms_filtered()))
+    plotly_panel(plot_message_volume_by_phase(timeline_comms_filtered()), tooltip = "text")
   })
 
   output$sensitive_keyword_counts <- renderPlotly({
-    plotly_panel(plot_sensitive_keyword_counts(timeline_comms_filtered()))
+    plotly_panel(plot_sensitive_keyword_counts(timeline_comms_filtered()), tooltip = "text")
   })
 
   output$timeline_event_table <- renderDT({
@@ -775,11 +775,11 @@ server <- function(input, output, session) {
   })
 
   output$channel_distribution <- renderPlotly({
-    plotly_panel(plot_channel_distribution(network_comms_filtered()))
+    plotly_panel(plot_channel_distribution(network_comms_filtered()), tooltip = "text")
   })
 
   output$network_comparison <- renderPlotly({
-    plotly_panel(plot_network_comparison(network_comms_filtered()))
+    plotly_panel(plot_network_comparison(network_comms_filtered()), tooltip = "text")
   })
 
   output$network_message_table <- renderDT({
@@ -865,11 +865,11 @@ server <- function(input, output, session) {
   })
 
   output$judge_coverage <- renderPlotly({
-    plotly_panel(plot_judge_coverage(pathway_evidence_filtered()))
+    plotly_panel(plot_judge_coverage(pathway_evidence_filtered()), tooltip = "text")
   })
 
   output$pathway_behavior_comparison <- renderPlotly({
-    plotly_panel(plot_pathway_behavior_comparison(pathway_evidence_filtered()))
+    plotly_panel(plot_pathway_behavior_comparison(pathway_evidence_filtered()), tooltip = "text")
   })
 
   output$pathway_evidence_table <- renderDT({

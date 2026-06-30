@@ -414,7 +414,14 @@ plot_message_volume_by_phase <- function(comms) {
 
   comms %>%
     count(crisis_phase, channel_group, name = "messages") %>%
-    ggplot(aes(x = crisis_phase, y = messages, fill = channel_group)) +
+    mutate(
+      tooltip = paste0(
+        "Crisis phase: ", .data$crisis_phase,
+        "<br>Channel group: ", .data$channel_group,
+        "<br>Messages: ", comma(.data$messages)
+      )
+    ) %>%
+    ggplot(aes(x = crisis_phase, y = messages, fill = channel_group, text = tooltip)) +
     geom_col(position = "dodge", width = 0.72) +
     scale_y_continuous(labels = comma) +
     labs(x = NULL, y = "Messages", fill = "Channel group") +
@@ -440,7 +447,16 @@ plot_sensitive_keyword_counts <- function(comms) {
     ) %>%
     pivot_longer(-crisis_phase, names_to = "keyword_group", values_to = "messages")
 
-  ggplot(keyword_counts, aes(x = crisis_phase, y = messages, fill = keyword_group)) +
+  keyword_counts <- keyword_counts %>%
+    mutate(
+      tooltip = paste0(
+        "Crisis phase: ", .data$crisis_phase,
+        "<br>Keyword group: ", .data$keyword_group,
+        "<br>Messages: ", comma(.data$messages)
+      )
+    )
+
+  ggplot(keyword_counts, aes(x = crisis_phase, y = messages, fill = keyword_group, text = tooltip)) +
     geom_col(position = "dodge", width = 0.72) +
     scale_y_continuous(labels = comma) +
     labs(x = NULL, y = "Messages", fill = NULL) +
@@ -696,8 +712,14 @@ plot_channel_distribution <- function(comms) {
 
   comms %>%
     count(channel_group, name = "messages") %>%
-    mutate(channel_label = str_wrap(as.character(.data$channel_group), width = 24)) %>%
-    ggplot(aes(x = reorder(channel_label, messages), y = messages)) +
+    mutate(
+      channel_label = str_wrap(as.character(.data$channel_group), width = 24),
+      tooltip = paste0(
+        "Channel group: ", .data$channel_group,
+        "<br>Messages: ", comma(.data$messages)
+      )
+    ) %>%
+    ggplot(aes(x = reorder(channel_label, messages), y = messages, text = tooltip)) +
     geom_col(fill = "#2f6f9f", width = 0.72) +
     coord_flip() +
     scale_y_continuous(labels = comma, expand = expansion(mult = c(0, 0.08))) +
@@ -717,8 +739,15 @@ plot_network_comparison <- function(comms) {
 
   comms %>%
     count(crisis_phase, channel_risk, name = "messages") %>%
-    mutate(crisis_phase_label = str_wrap(as.character(.data$crisis_phase), width = 22)) %>%
-    ggplot(aes(x = crisis_phase_label, y = messages, fill = channel_risk)) +
+    mutate(
+      crisis_phase_label = str_wrap(as.character(.data$crisis_phase), width = 22),
+      tooltip = paste0(
+        "Crisis phase: ", .data$crisis_phase,
+        "<br>Channel risk: ", .data$channel_risk,
+        "<br>Messages: ", comma(.data$messages)
+      )
+    ) %>%
+    ggplot(aes(x = crisis_phase_label, y = messages, fill = channel_risk, text = tooltip)) +
     geom_col(position = "dodge", width = 0.72) +
     coord_flip() +
     scale_y_continuous(labels = comma, expand = expansion(mult = c(0, 0.1))) +
@@ -831,7 +860,14 @@ plot_judge_coverage <- function(pathway_evidence) {
 
   pathway_evidence %>%
     count(judge_monitored_status, pathway_stage, name = "records") %>%
-    ggplot(aes(x = pathway_stage, y = records, fill = judge_monitored_status)) +
+    mutate(
+      tooltip = paste0(
+        "Pathway stage: ", .data$pathway_stage,
+        "<br>Judge status: ", .data$judge_monitored_status,
+        "<br>Evidence records: ", comma(.data$records)
+      )
+    ) %>%
+    ggplot(aes(x = pathway_stage, y = records, fill = judge_monitored_status, text = tooltip)) +
     geom_col(position = "dodge", width = 0.72) +
     scale_y_continuous(labels = comma) +
     labs(x = NULL, y = "Evidence records", fill = "Judge status") +
@@ -846,7 +882,14 @@ plot_pathway_behavior_comparison <- function(pathway_evidence) {
 
   pathway_evidence %>%
     count(crisis_phase, channel_risk, name = "records") %>%
-    ggplot(aes(x = crisis_phase, y = records, fill = channel_risk)) +
+    mutate(
+      tooltip = paste0(
+        "Crisis phase: ", .data$crisis_phase,
+        "<br>Channel risk: ", .data$channel_risk,
+        "<br>Evidence records: ", comma(.data$records)
+      )
+    ) %>%
+    ggplot(aes(x = crisis_phase, y = records, fill = channel_risk, text = tooltip)) +
     geom_col(position = "dodge", width = 0.72) +
     scale_y_continuous(labels = comma) +
     labs(x = NULL, y = "Evidence records", fill = "Channel risk") +
