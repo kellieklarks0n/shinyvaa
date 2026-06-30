@@ -1,7 +1,47 @@
+html,
+body {
+  min-height: 100%;
+  overflow-x: hidden;
+  width: 100%;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 body {
   background: #f3f5f7;
   color: #1f2933;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.container,
+.container-sm,
+.container-md,
+.container-lg,
+.container-xl,
+.container-xxl,
+.container-fluid,
+.bslib-page-navbar,
+.bslib-page-navbar > .container,
+.bslib-page-navbar > .container-fluid,
+.tab-content,
+.tab-pane,
+.app-shell,
+.page-shell {
+  max-width: none !important;
+}
+
+.bslib-page-navbar,
+.tab-content,
+.tab-pane,
+.app-shell,
+.page-shell {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  width: 100%;
 }
 
 .navbar {
@@ -84,9 +124,15 @@ body {
 }
 
 .page-shell {
-  margin: 0 auto;
-  max-width: 1480px;
+  margin: 0;
+  max-width: none;
   padding: 24px 28px 36px;
+  width: 100%;
+}
+
+.full-width-tab {
+  max-width: none;
+  width: 100%;
 }
 
 .landing-dashboard {
@@ -140,6 +186,12 @@ body {
   max-width: none;
   overflow: hidden;
   padding: 14px 18px 18px;
+  width: 100%;
+}
+
+.crisis-timeline-tab {
+  height: calc(100vh - 68px);
+  min-height: 650px;
 }
 
 .dashboard-layout {
@@ -147,6 +199,12 @@ body {
   gap: 16px;
   grid-template-columns: 320px minmax(0, 1fr);
   height: 100%;
+  min-height: 0;
+  max-width: none;
+  width: 100%;
+}
+
+.crisis-timeline-layout {
   min-height: 0;
 }
 
@@ -159,18 +217,22 @@ body {
 .filter-sidebar {
   display: flex;
   flex-direction: column;
-  overflow: auto;
+  max-width: 340px;
+  min-width: 300px;
+  overflow: hidden;
   width: 320px;
 }
 
 .main-dashboard-area {
   display: grid;
   gap: 14px;
+  max-width: none;
   overflow: hidden;
+  width: 100%;
 }
 
 .timeline-dashboard-area {
-  grid-template-rows: minmax(250px, 0.9fr) minmax(260px, 1fr);
+  grid-template-rows: minmax(360px, 1.35fr) minmax(220px, 0.85fr);
 }
 
 .network-dashboard-area {
@@ -188,8 +250,43 @@ body {
   min-width: 0;
 }
 
+.dashboard-top-row,
+.dashboard-bottom-row {
+  display: grid;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.dashboard-top-row {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.stretch-card {
+  height: 100%;
+}
+
+.scroll-card .card-body {
+  overflow: auto;
+}
+
 .timeline-support-grid {
-  grid-template-columns: minmax(260px, 0.8fr) minmax(360px, 1.05fr) minmax(340px, 1fr);
+  align-items: stretch;
+  grid-auto-rows: minmax(0, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  overflow: hidden;
+}
+
+.timeline-support-grid > .shiny-panel-conditional {
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+}
+
+.timeline-support-grid > .dashboard-card,
+.timeline-support-grid > .shiny-panel-conditional > .dashboard-card {
+  flex: 1 1 auto;
+  height: 100%;
 }
 
 .network-main-grid {
@@ -239,7 +336,12 @@ body {
 }
 
 .filter-sidebar-card {
+  height: 100%;
   margin-bottom: 0;
+}
+
+.filter-card {
+  min-height: 0;
 }
 
 .filter-sidebar-card .card-header {
@@ -248,7 +350,12 @@ body {
 }
 
 .filter-sidebar-card .card-body {
+  overflow: auto;
   padding: 12px;
+}
+
+.timeline-chart-card .card-body {
+  padding: 12px 14px 14px;
 }
 
 .chart-card .card-body {
@@ -838,6 +945,7 @@ table.dataTable tbody td {
 
   .dashboard-tab {
     height: auto;
+    min-height: 0;
     overflow: visible;
   }
 
@@ -854,6 +962,8 @@ table.dataTable tbody td {
   .timeline-dashboard-area,
   .network-dashboard-area,
   .pathway-dashboard-area,
+  .dashboard-top-row,
+  .dashboard-bottom-row,
   .dashboard-card-grid,
   .timeline-support-grid,
   .network-main-grid,
@@ -864,6 +974,7 @@ table.dataTable tbody td {
   }
 
   .dashboard-tab .dashboard-card {
+    height: auto;
     min-height: 320px;
   }
 

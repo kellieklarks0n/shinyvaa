@@ -375,6 +375,7 @@ nav_guide_item <- function(title, text) {
 
 ui <- page_navbar(
   title = div(class = "navbar-app-title", "TenantThread AI Crisis"),
+  fillable = TRUE,
   theme = bs_theme(version = 5, bootswatch = "flatly"),
   window_title = "Embargo Breach: Tracing TenantThread's AI Crisis",
   navbar_options = navbar_options(collapsible = FALSE, underline = FALSE),
@@ -384,7 +385,7 @@ ui <- page_navbar(
   nav_panel(
     "Landing Page / Overview",
     div(
-      class = "page-shell landing-dashboard",
+      class = "app-shell page-shell full-width-tab landing-dashboard",
       div(
         class = "overview-hero compact-overview-hero",
         div(class = "overview-eyebrow", "TenantThread Case File"),
@@ -460,9 +461,9 @@ ui <- page_navbar(
   nav_panel(
     "Crisis Timeline",
     div(
-      class = "page-shell dashboard-tab",
+      class = "app-shell page-shell full-width-tab dashboard-tab crisis-timeline-tab",
       div(
-        class = "dashboard-layout",
+        class = "dashboard-layout crisis-timeline-layout",
         div(
           class = "filter-sidebar",
           section_card(
@@ -482,22 +483,30 @@ ui <- page_navbar(
               selectizeInput("timeline_channels", "Channel", choices = channel_choices, selected = "All", multiple = TRUE),
               textInput("timeline_keyword", "Keyword search"),
               selectizeInput("timeline_phases", "Crisis phase", choices = phase_choices, selected = "All", multiple = TRUE),
-              checkboxInput("timeline_show_anomaly", "Show anomaly events", value = TRUE)
+              checkboxInput("timeline_show_anomaly", "Show anomaly events", value = TRUE),
+              checkboxInput("timeline_show_round_context", "Show Round Context Panel", value = FALSE),
+              checkboxInput("timeline_show_event_detail", "Show Linked Event Detail Table", value = FALSE)
             ),
-            class = "compact-card filter-sidebar-card"
+            class = "compact-card filter-sidebar-card filter-card stretch-card scroll-card"
           )
         ),
         div(
           class = "main-dashboard-area timeline-dashboard-area",
-          section_card(
-            "Interactive Crisis Timeline",
-            div(class = "timeline-slider-note", "Use the range slider below the timeline to zoom into specific dates."),
-            plotlyOutput("crisis_timeline", height = "100%"),
-            class = "chart-card timeline-chart-card"
+          div(
+            class = "dashboard-top-row",
+            section_card(
+              "Interactive Crisis Timeline",
+              div(class = "timeline-slider-note", "Use the range slider below the timeline to zoom into specific dates."),
+              plotlyOutput("crisis_timeline", height = "100%"),
+              class = "chart-card timeline-chart-card stretch-card"
+            )
           ),
           div(
-            class = "dashboard-card-grid timeline-support-grid",
-            section_card("Round Context Panel", DTOutput("round_context_table"), class = "table-card compact-card"),
+            class = "dashboard-card-grid dashboard-bottom-row timeline-support-grid",
+            conditionalPanel(
+              condition = "input.timeline_show_round_context === true",
+              section_card("Round Context Panel", DTOutput("round_context_table"), class = "table-card compact-card stretch-card scroll-card")
+            ),
             section_card(
               "Embedded Comparison / Summary",
               layout_columns(
@@ -505,12 +514,15 @@ ui <- page_navbar(
                 plotlyOutput("message_volume_phase", height = "100%"),
                 plotlyOutput("sensitive_keyword_counts", height = "100%")
               ),
-              class = "chart-card compact-card"
+              class = "chart-card compact-card stretch-card"
             ),
-            section_card(
-              "Linked Event Detail Table",
-              DTOutput("timeline_event_table"),
-              class = "table-card compact-card"
+            conditionalPanel(
+              condition = "input.timeline_show_event_detail === true",
+              section_card(
+                "Linked Event Detail Table",
+                DTOutput("timeline_event_table"),
+                class = "table-card compact-card stretch-card scroll-card"
+              )
             )
           )
         )
@@ -520,7 +532,7 @@ ui <- page_navbar(
   nav_panel(
     "Agent Network",
     div(
-      class = "page-shell dashboard-tab",
+      class = "app-shell page-shell full-width-tab dashboard-tab",
       div(
         class = "dashboard-layout",
         div(
@@ -567,7 +579,7 @@ ui <- page_navbar(
   nav_panel(
     "Embargo Breach Pathway",
     div(
-      class = "page-shell dashboard-tab",
+      class = "app-shell page-shell full-width-tab dashboard-tab",
       div(
         class = "dashboard-layout",
         div(
@@ -611,7 +623,7 @@ ui <- page_navbar(
   nav_panel(
     "User Guide",
     div(
-      class = "page-shell user-guide-shell",
+      class = "app-shell page-shell full-width-tab user-guide-shell",
       div(
         class = "overview-hero user-guide-hero",
         div(class = "overview-eyebrow", "How to Use This App"),
