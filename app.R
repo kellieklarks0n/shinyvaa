@@ -469,14 +469,22 @@ ui <- page_navbar(
             "Inputs / Filters",
             div(
               class = "timeline-filter-grid",
-              dateRangeInput("timeline_dates", "Date range", start = date_range[[1]], end = date_range[[2]], min = date_range[[1]], max = date_range[[2]]),
+              dateRangeInput(
+                "timeline_dates",
+                "Date range",
+                start = date_range[[1]],
+                end = date_range[[2]],
+                min = date_range[[1]],
+                max = date_range[[2]],
+                width = "100%"
+              ),
               selectizeInput("timeline_agents", "Agent", choices = agent_choices, selected = "All", multiple = TRUE),
               selectizeInput("timeline_channels", "Channel", choices = channel_choices, selected = "All", multiple = TRUE),
               textInput("timeline_keyword", "Keyword search"),
               selectizeInput("timeline_phases", "Crisis phase", choices = phase_choices, selected = "All", multiple = TRUE),
               checkboxInput("timeline_show_anomaly", "Show anomaly events", value = TRUE)
             ),
-            class = "compact-card"
+            class = "compact-card filter-sidebar-card"
           )
         ),
         div(
@@ -522,12 +530,20 @@ ui <- page_navbar(
             div(
               class = "agent-filter-grid",
               selectizeInput("network_focal_agent", "Focal agent", choices = agent_choices, selected = "All", multiple = FALSE),
-              dateRangeInput("network_dates", "Date range", start = date_range[[1]], end = date_range[[2]], min = date_range[[1]], max = date_range[[2]]),
+              dateRangeInput(
+                "network_dates",
+                "Date range",
+                start = date_range[[1]],
+                end = date_range[[2]],
+                min = date_range[[1]],
+                max = date_range[[2]],
+                width = "100%"
+              ),
               selectizeInput("network_channels", "Channel", choices = channel_choices, selected = "All", multiple = TRUE),
               selectizeInput("network_phases", "Crisis phase", choices = phase_choices, selected = "All", multiple = TRUE),
               textInput("network_keyword", "Keyword search")
             ),
-            class = "compact-card"
+            class = "compact-card filter-sidebar-card"
           )
         ),
         div(
@@ -566,7 +582,7 @@ ui <- page_navbar(
               selectizeInput("pathway_phases", "Crisis phase", choices = safe_choices(pathway_evidence, "crisis_phase"), selected = "All", multiple = TRUE),
               checkboxInput("pathway_anomaly_only", "Anomaly-only", value = FALSE)
             ),
-            class = "compact-card"
+            class = "compact-card filter-sidebar-card"
           )
         ),
         div(

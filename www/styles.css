@@ -145,7 +145,7 @@ body {
 .dashboard-layout {
   display: grid;
   gap: 16px;
-  grid-template-columns: 300px minmax(0, 1fr);
+  grid-template-columns: 320px minmax(0, 1fr);
   height: 100%;
   min-height: 0;
 }
@@ -160,6 +160,7 @@ body {
   display: flex;
   flex-direction: column;
   overflow: auto;
+  width: 320px;
 }
 
 .main-dashboard-area {
@@ -234,6 +235,19 @@ body {
 }
 
 .compact-card .card-body {
+  padding: 12px;
+}
+
+.filter-sidebar-card {
+  margin-bottom: 0;
+}
+
+.filter-sidebar-card .card-header {
+  font-size: 0.9rem;
+  padding: 9px 12px;
+}
+
+.filter-sidebar-card .card-body {
   padding: 12px;
 }
 
@@ -549,10 +563,6 @@ body {
   margin-top: 8px;
 }
 
-.bslib-sidebar-layout {
-  gap: 18px;
-}
-
 .timeline-filter-grid {
   align-items: end;
   display: grid;
@@ -598,21 +608,86 @@ body {
 .filter-sidebar .agent-filter-grid,
 .filter-sidebar .pathway-filter-grid {
   align-items: stretch;
+  display: grid;
+  gap: 10px;
   grid-template-columns: 1fr;
 }
 
-.filter-sidebar .timeline-filter-grid,
-.filter-sidebar .agent-filter-grid,
-.filter-sidebar .pathway-filter-grid {
-  gap: 10px;
-}
-
 .filter-sidebar .checkbox {
+  margin: 0;
   padding-top: 2px;
 }
 
+.filter-sidebar .checkbox label {
+  align-items: flex-start;
+  display: flex;
+  gap: 7px;
+  line-height: 1.25;
+}
+
+.filter-sidebar .checkbox input[type="checkbox"] {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.filter-sidebar .form-group,
 .filter-sidebar .shiny-input-container {
-  font-size: 0.92rem;
+  font-size: 0.9rem;
+  margin-bottom: 0;
+  width: 100%;
+}
+
+.filter-sidebar label,
+.filter-sidebar .control-label {
+  color: #253746;
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 5px;
+}
+
+.filter-sidebar .form-control,
+.filter-sidebar .selectize-input {
+  font-size: 0.9rem;
+  min-height: 34px;
+}
+
+.filter-sidebar .selectize-control {
+  margin-bottom: 0;
+}
+
+.filter-sidebar .selectize-control.multi .selectize-input > div {
+  margin: 1px 3px 1px 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.filter-sidebar .shiny-date-range-input {
+  max-width: none;
+  width: 100%;
+}
+
+.filter-sidebar .shiny-date-range-input .input-daterange,
+.filter-sidebar .shiny-date-range-input .input-daterange.input-group {
+  align-items: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.filter-sidebar .shiny-date-range-input .input-daterange input,
+.filter-sidebar .shiny-date-range-input .input-daterange .form-control {
+  box-sizing: border-box;
+  display: block;
+  flex: 0 0 auto;
+  min-width: 0;
+  width: 100% !important;
+}
+
+.filter-sidebar .shiny-date-range-input .input-group-addon,
+.filter-sidebar .shiny-date-range-input .input-group-text {
+  display: none;
 }
 
 .risk-summary {
@@ -769,6 +844,10 @@ table.dataTable tbody td {
   .dashboard-layout {
     grid-template-columns: 1fr;
     height: auto;
+  }
+
+  .filter-sidebar {
+    width: 100%;
   }
 
   .main-dashboard-area,
