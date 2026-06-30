@@ -792,6 +792,7 @@ build_breach_pathway_network <- function(nodes, edges) {
         "<b>", label, "</b>",
         if ("description" %in% names(.)) str_c("<br>", .data$description) else ""
       ),
+      label = str_wrap(label, width = 16),
       shape = "box",
       color.background = case_when(
         level == 1 ~ "#e8f2f8",
@@ -809,11 +810,13 @@ build_breach_pathway_network <- function(nodes, edges) {
         level >= 5 ~ "#b42318",
         TRUE ~ "#667085"
       ),
-      font.size = 13,
+      font.size = 16,
       font.face = "bold",
-      margin = 8,
-      widthConstraint.minimum = 118,
-      widthConstraint.maximum = 158
+      font.color = "#17202a",
+      margin = 12,
+      widthConstraint.minimum = 155,
+      widthConstraint.maximum = 190,
+      heightConstraint.minimum = 64
     ) %>%
     arrange(level) %>%
     select(
@@ -826,9 +829,11 @@ build_breach_pathway_network <- function(nodes, edges) {
       color.border,
       font.size,
       font.face,
+      font.color,
       margin,
       widthConstraint.minimum,
-      widthConstraint.maximum
+      widthConstraint.maximum,
+      heightConstraint.minimum
     )
 
   vis_edges <- edges %>%
@@ -836,22 +841,22 @@ build_breach_pathway_network <- function(nodes, edges) {
       from = as.character(.data$from),
       to = as.character(.data$to),
       arrows = "to",
-      width = if ("weight" %in% names(.)) pmax(1, as.numeric(.data$weight)) else 1
+      width = if ("weight" %in% names(.)) pmax(2, as.numeric(.data$weight)) else 2
     )
 
   visNetwork(vis_nodes, vis_edges) %>%
     visHierarchicalLayout(
       direction = "LR",
       sortMethod = "directed",
-      levelSeparation = 165,
-      nodeSpacing = 70,
-      treeSpacing = 90
+      levelSeparation = 215,
+      nodeSpacing = 95,
+      treeSpacing = 110
     ) %>%
     visNodes(shapeProperties = list(borderRadius = 6)) %>%
     visEdges(
-      arrows = list(to = list(scaleFactor = 0.7)),
-      smooth = list(type = "cubicBezier", forceDirection = "horizontal", roundness = 0.25),
-      color = list(color = "#667085")
+      arrows = list(to = list(enabled = TRUE, scaleFactor = 0.85)),
+      smooth = FALSE,
+      color = list(color = "#4b5563", highlight = "#b42318")
     ) %>%
     visPhysics(enabled = FALSE) %>%
     visInteraction(dragNodes = FALSE, dragView = FALSE, zoomView = FALSE) %>%
@@ -932,7 +937,9 @@ make_event_detail_table <- function(data) {
     class = "display compact stripe tenantthread-table",
     options = list(
       scrollX = TRUE,
-      pageLength = 8,
+      scrollY = "220px",
+      scrollCollapse = TRUE,
+      pageLength = 6,
       autoWidth = TRUE,
       searching = TRUE,
       columnDefs = list(
@@ -969,6 +976,8 @@ make_round_context_table <- function(data) {
     rownames = FALSE,
     options = list(
       scrollX = TRUE,
+      scrollY = "190px",
+      scrollCollapse = TRUE,
       pageLength = 5,
       autoWidth = TRUE
     )
@@ -998,7 +1007,9 @@ make_timeline_event_detail_table <- function(data) {
     filter = "top",
     options = list(
       scrollX = TRUE,
-      pageLength = 10,
+      scrollY = "220px",
+      scrollCollapse = TRUE,
+      pageLength = 6,
       autoWidth = TRUE
     )
   )
@@ -1041,7 +1052,9 @@ make_evidence_table <- function(data) {
     class = "display compact stripe tenantthread-table",
     options = list(
       scrollX = TRUE,
-      pageLength = 8,
+      scrollY = "220px",
+      scrollCollapse = TRUE,
+      pageLength = 6,
       autoWidth = TRUE,
       searching = TRUE,
       columnDefs = list(

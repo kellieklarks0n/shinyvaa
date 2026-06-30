@@ -131,6 +131,31 @@ filter_keyword <- function(data, keyword, cols = c("content", "message", "text",
   filtered
 }
 
+filter_keyword_any <- function(data, keyword, cols) {
+  if (!is.data.frame(data) || is.null(keyword) || !nzchar(str_squish(keyword))) {
+    return(data)
+  }
+
+  search_cols <- intersect(cols, names(data))
+  if (length(search_cols) == 0) {
+    return(data)
+  }
+
+  terms <- str_split(keyword, "[,\\s]+", simplify = FALSE)[[1]]
+  terms <- terms %>%
+    str_squish()
+  terms <- terms[nzchar(terms)]
+
+  if (length(terms) == 0) {
+    return(data)
+  }
+
+  pattern <- regex(str_c(str_escape(terms), collapse = "|"), ignore_case = TRUE)
+
+  data %>%
+    filter(if_any(all_of(search_cols), ~ str_detect(coalesce(as.character(.x), ""), pattern)))
+}
+
 filter_out_anomaly_events <- function(data) {
   if (!is.data.frame(data) || nrow(data) == 0) {
     return(data)
@@ -597,6 +622,7 @@ ui <- page_navbar(
               class = "pathway-filter-grid",
               selectizeInput("pathway_stage", "Pathway stage", choices = safe_choices(pathway_evidence, "pathway_stage"), selected = "All", multiple = TRUE),
               textInput("pathway_keyword", "Keyword search"),
+              div(class = "filter-helper-text", "Tip: use spaces or commas to search multiple keywords. The search matches any keyword."),
               selectizeInput("pathway_channel_risk", "Channel risk", choices = safe_choices(pathway_evidence, "channel_risk"), selected = "All", multiple = TRUE),
               selectizeInput("pathway_phases", "Crisis phase", choices = safe_choices(pathway_evidence, "crisis_phase"), selected = "All", multiple = TRUE),
               checkboxInput("pathway_anomaly_only", "Anomaly-only", value = FALSE),
@@ -611,8 +637,9 @@ ui <- page_navbar(
             class = "dashboard-card-grid pathway-main-grid",
             section_card(
               "Embargo Breach Pathway / Response Chain",
-              visNetworkOutput("breach_pathway_network", height = "100%"),
-              class = "chart-card compact-card pathway-strip-card"
+              uiOutput("pathway_result_count"),
+              visNetworkOutput("breach_pathway_network", height = "150px"),
+              class = "chart-card compact-card pathway-strip-card response-chain-card"
             ),
             section_card(
               "Embedded Risk Summary",
@@ -796,10 +823,23 @@ server <- function(input, output, session) {
     data <- pathway_evidence
 
     data <- filter_select(data, input$pathway_stage, "pathway_stage")
-    data <- filter_keyword(
+    data <- filter_keyword_any(
       data,
       input$pathway_keyword,
-      cols = c("content", "anomaly_reason", "pathway_stage", "agent_clean")
+      cols = c(
+        "content",
+        "anomaly_reason",
+        "pathway_stage",
+        "agent_clean",
+        "channel",
+        "channel_group",
+        "crisis_phase",
+        "channel_risk",
+        "judge_monitored_status",
+        "deliberating",
+        "rationalizing",
+        "reacting"
+      )
     )
     data <- filter_select(data, input$pathway_channel_risk, "channel_risk")
     data <- filter_select(data, input$pathway_phases, "crisis_phase")
@@ -815,11 +855,21 @@ server <- function(input, output, session) {
     build_breach_pathway_network(breach_pathway_nodes, breach_pathway_edges)
   })
 
+  output$pathway_result_count <- renderUI({
+    data <- pathway_evidence_filtered()
+    count <- if (is.data.frame(data)) nrow(data) else 0L
+
+    div(class = "result-count", paste("Filtered evidence records:", comma(count)))
+  })
+
   output$pathway_risk_counts <- renderUI({
     data <- pathway_evidence_filtered()
 
     if (!is.data.frame(data) || nrow(data) == 0) {
-      return(div(class = "risk-summary-empty", "No evidence records match the selected filters."))
+      return(div(
+        class = "risk-summary-empty",
+        "No evidence records match the current combination of filters. Try broadening the keyword, channel risk, crisis phase, or anomaly-only setting."
+      ))
     }
 
     status_counts <- if ("judge_monitored_status" %in% names(data)) {

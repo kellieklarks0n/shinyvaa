@@ -106,7 +106,7 @@ body {
   color: #253746 !important;
   font-weight: 700;
   line-height: 1.2;
-  padding: 9px 12px;
+  padding: 8px 10px;
   white-space: nowrap;
 }
 
@@ -126,7 +126,7 @@ body {
 .page-shell {
   margin: 0;
   max-width: none;
-  padding: 24px 28px 36px;
+  padding: 16px 18px 22px;
   width: 100%;
 }
 
@@ -137,18 +137,18 @@ body {
 
 .landing-dashboard {
   display: grid;
-  gap: 12px;
+  gap: 10px;
   grid-template-rows: auto minmax(0, 1fr);
-  height: calc(100vh - 76px);
+  height: calc(100vh - 68px);
   max-width: none;
   overflow: hidden;
-  padding: 14px 18px 18px;
+  padding: 12px 16px 16px;
 }
 
 .landing-dashboard-grid {
   display: grid;
-  gap: 14px;
-  grid-template-columns: minmax(500px, 0.95fr) minmax(540px, 1.05fr);
+  gap: 12px;
+  grid-template-columns: minmax(440px, 0.95fr) minmax(480px, 1.05fr);
   min-height: 0;
 }
 
@@ -182,22 +182,22 @@ body {
 }
 
 .dashboard-tab {
-  height: calc(100vh - 76px);
+  height: calc(100vh - 68px);
   max-width: none;
   overflow: hidden;
-  padding: 14px 18px 18px;
+  padding: 12px 16px 16px;
   width: 100%;
 }
 
 .crisis-timeline-tab {
   height: calc(100vh - 68px);
-  min-height: 650px;
+  min-height: 610px;
 }
 
 .dashboard-layout {
   display: grid;
-  gap: 16px;
-  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 12px;
+  grid-template-columns: 292px minmax(0, 1fr);
   height: 100%;
   min-height: 0;
   max-width: none;
@@ -217,22 +217,22 @@ body {
 .filter-sidebar {
   display: flex;
   flex-direction: column;
-  max-width: 340px;
-  min-width: 300px;
+  max-width: 304px;
+  min-width: 280px;
   overflow: hidden;
-  width: 320px;
+  width: 292px;
 }
 
 .main-dashboard-area {
   display: grid;
-  gap: 14px;
+  gap: 12px;
   max-width: none;
   overflow: hidden;
   width: 100%;
 }
 
 .timeline-dashboard-area {
-  grid-template-rows: minmax(360px, 1.35fr) minmax(220px, 0.85fr);
+  grid-template-rows: minmax(330px, 1.32fr) minmax(205px, 0.88fr);
 }
 
 .network-dashboard-area {
@@ -245,7 +245,7 @@ body {
 
 .dashboard-card-grid {
   display: grid;
-  gap: 14px;
+  gap: 12px;
   min-height: 0;
   min-width: 0;
 }
@@ -273,7 +273,7 @@ body {
 .timeline-support-grid {
   align-items: stretch;
   grid-auto-rows: minmax(0, 1fr);
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   overflow: hidden;
 }
 
@@ -291,8 +291,8 @@ body {
 
 .network-main-grid,
 .agent-network-main-grid {
-  grid-template-columns: minmax(650px, 2.2fr) minmax(430px, 1fr);
-  grid-template-rows: 148px minmax(0, 1fr);
+  grid-template-columns: minmax(500px, 1.95fr) minmax(330px, 1fr);
+  grid-template-rows: 128px minmax(0, 1fr);
   height: 100%;
 }
 
@@ -329,9 +329,9 @@ body {
 .network-support-column,
 .agent-network-support-column {
   display: grid;
-  gap: 14px;
-  grid-auto-rows: minmax(220px, 0.75fr);
-  grid-template-rows: minmax(240px, 0.9fr) minmax(280px, 1.1fr);
+  gap: 12px;
+  grid-auto-rows: minmax(190px, 0.75fr);
+  grid-template-rows: minmax(205px, 0.9fr) minmax(230px, 1.1fr);
   min-height: 0;
   min-width: 0;
   overflow: hidden;
@@ -372,16 +372,16 @@ body {
 }
 
 .pathway-main-grid {
-  grid-template-columns: minmax(430px, 1fr) minmax(430px, 1fr);
-  grid-template-rows: 138px minmax(0, 1fr);
-  grid-auto-rows: minmax(190px, 0.72fr);
+  grid-template-columns: minmax(340px, 1fr) minmax(340px, 1fr);
+  grid-template-rows: 206px minmax(0, 1fr);
+  grid-auto-rows: minmax(170px, 0.72fr);
   height: 100%;
   overflow: hidden;
 }
 
 .pathway-strip-card {
   grid-column: 1 / -1;
-  min-height: 0;
+  min-height: 190px;
 }
 
 .pathway-strip-card .card-header {
@@ -390,11 +390,21 @@ body {
 }
 
 .pathway-strip-card .card-body {
-  padding: 6px 10px;
+  align-items: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  justify-content: center;
+  padding: 6px 10px 8px;
 }
 
+.pathway-strip-card .shiny-html-output,
+.pathway-strip-card .html-widget,
 .pathway-strip-card .vis-network {
+  flex: 1 1 auto;
+  height: 150px !important;
   min-height: 0;
+  width: 100% !important;
 }
 
 .pathway-risk-card,
@@ -441,7 +451,7 @@ body {
   border: 1px solid #d8dee7;
   border-radius: 8px;
   box-shadow: 0 1px 2px rgba(31, 41, 51, 0.035);
-  margin-bottom: 18px;
+  margin-bottom: 14px;
 }
 
 .dashboard-tab .dashboard-card {
@@ -464,11 +474,11 @@ body {
 
 .compact-card .card-header {
   font-size: 0.94rem;
-  padding: 10px 13px;
+  padding: 8px 12px;
 }
 
 .compact-card .card-body {
-  padding: 12px;
+  padding: 10px;
 }
 
 .filter-sidebar-card {
@@ -487,17 +497,17 @@ body {
 
 .filter-sidebar-card .card-body {
   overflow: auto;
-  padding: 12px;
+  padding: 10px;
 }
 
 .timeline-chart-card .card-body {
-  padding: 12px 14px 14px;
+  padding: 10px 12px 12px;
 }
 
 .chart-card .card-body {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .chart-card .bslib-grid {
@@ -525,7 +535,8 @@ body {
 }
 
 .table-card .dataTables_wrapper {
-  min-width: 620px;
+  max-width: 100%;
+  min-width: 560px;
 }
 
 .card-header {
@@ -535,11 +546,11 @@ body {
   font-size: 1.02rem;
   font-weight: 800;
   letter-spacing: 0;
-  padding: 13px 18px;
+  padding: 10px 14px;
 }
 
 .card-body {
-  padding: 18px;
+  padding: 14px;
 }
 
 .overview-hero {
@@ -553,7 +564,7 @@ body {
 
 .compact-overview-hero {
   margin-bottom: 0;
-  padding: 14px 18px;
+  padding: 12px 16px;
 }
 
 .overview-eyebrow {
@@ -786,15 +797,46 @@ body {
 
 .dashboard-tab .timeline-slider-note {
   flex: 0 0 auto;
-  font-size: 0.86rem;
+  font-size: 0.84rem;
   margin-bottom: 0;
-  padding: 8px 10px;
+  padding: 7px 9px;
+}
+
+.user-guide-shell {
+  height: auto;
+  max-width: 1280px !important;
+  margin: 0 auto !important;
+  overflow: visible;
+  padding: 14px 18px 24px;
+}
+
+.user-guide-hero {
+  margin-bottom: 12px;
+  padding: 16px 20px;
+}
+
+.user-guide-hero h1 {
+  font-size: clamp(1.7rem, 2.4vw, 2.35rem);
+}
+
+.user-guide-hero p {
+  font-size: 0.96rem;
+  line-height: 1.4;
+  margin-top: 8px;
+}
+
+.user-guide-shell .section-card {
+  margin-bottom: 12px;
+}
+
+.user-guide-shell .card-header {
+  font-size: 0.96rem;
 }
 
 .user-guide-shell .section-card p,
 .user-guide-shell .section-card li {
   color: #26323d;
-  line-height: 1.55;
+  line-height: 1.45;
 }
 
 .user-guide-shell ol {
@@ -852,7 +894,7 @@ body {
 .filter-sidebar .pathway-filter-grid {
   align-items: stretch;
   display: grid;
-  gap: 10px;
+  gap: 8px;
   grid-template-columns: 1fr;
 }
 
@@ -873,6 +915,13 @@ body {
   margin-top: 2px;
 }
 
+.filter-helper-text {
+  color: #52616f;
+  font-size: 0.78rem;
+  line-height: 1.25;
+  margin-top: -4px;
+}
+
 .filter-sidebar .form-group,
 .filter-sidebar .shiny-input-container {
   font-size: 0.9rem;
@@ -891,8 +940,8 @@ body {
 
 .filter-sidebar .form-control,
 .filter-sidebar .selectize-input {
-  font-size: 0.9rem;
-  min-height: 34px;
+  font-size: 0.88rem;
+  min-height: 32px;
 }
 
 .filter-sidebar .selectize-control {
@@ -938,6 +987,18 @@ body {
   gap: 12px;
   grid-template-columns: repeat(2, minmax(130px, 1fr));
   margin-bottom: 14px;
+}
+
+.result-count {
+  background: #f8fafc;
+  border: 1px solid #e5e9f0;
+  border-radius: 6px;
+  color: #253746;
+  flex: 0 0 auto;
+  font-size: 0.8rem;
+  font-weight: 800;
+  line-height: 1.2;
+  padding: 4px 8px;
 }
 
 .risk-summary-metric,
@@ -1027,7 +1088,9 @@ label {
 }
 
 .dataTables_wrapper {
-  font-size: 0.9rem;
+  font-size: 0.84rem;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .tenantthread-table {
@@ -1039,11 +1102,22 @@ label {
 }
 
 .tenantthread-table tbody td {
-  line-height: 1.35;
-  max-width: 440px;
+  line-height: 1.28;
+  max-width: 360px;
   white-space: normal;
   word-break: normal;
   overflow-wrap: anywhere;
+}
+
+.dataTables_scrollBody {
+  max-height: 260px !important;
+}
+
+.dataTables_wrapper .dataTables_info,
+.dataTables_wrapper .dataTables_paginate,
+.dataTables_wrapper .dataTables_filter,
+.dataTables_wrapper .dataTables_length {
+  font-size: 0.82rem;
 }
 
 .dataTables_wrapper .dataTables_filter input,
@@ -1064,7 +1138,7 @@ table.dataTable tbody td {
   vertical-align: top;
 }
 
-@media (max-width: 1500px) {
+@media (max-width: 1180px) {
   .network-main-grid,
   .agent-network-main-grid {
     grid-template-columns: 1fr;
