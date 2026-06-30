@@ -1,0 +1,414 @@
+warning: in the working copy of 'R/03_visual_functions.R', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/R/03_visual_functions.R b/R/03_visual_functions.R[m
+[1mindex d40e7f8..fecea0d 100644[m
+[1m--- a/R/03_visual_functions.R[m
+[1m+++ b/R/03_visual_functions.R[m
+[36m@@ -1 +1,407 @@[m
+[31m-# Visualization helper functions will be added here.[m
+[32m+[m[32m# Reusable visualisation functions for the TenantThread Shiny app.[m
+[32m+[m
+[32m+[m[32msuppressPackageStartupMessages({[m
+[32m+[m[32m  library(tidyverse)[m
+[32m+[m[32m  library(lubridate)[m
+[32m+[m[32m  library(stringr)[m
+[32m+[m[32m  library(ggplot2)[m
+[32m+[m[32m  library(plotly)[m
+[32m+[m[32m  library(visNetwork)[m
+[32m+[m[32m  library(DT)[m
+[32m+[m[32m  library(scales)[m
+[32m+[m[32m})[m
+[32m+[m
+[32m+[m[32mempty_plot <- function(message = "No data available for selected filters") {[m
+[32m+[m[32m  ggplot() +[m
+[32m+[m[32m    annotate("text", x = 0, y = 0, label = message, size = 5, colour = "grey35") +[m
+[32m+[m[32m    xlim(-1, 1) +[m
+[32m+[m[32m    ylim(-1, 1) +[m
+[32m+[m[32m    theme_void()[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mhas_rows <- function(data) {[m
+[32m+[m[32m  is.data.frame(data) && nrow(data) > 0[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mavailable_cols <- function(data, cols) {[m
+[32m+[m[32m  intersect(cols, names(data))[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mcreate_value_box_content <- function(value, subtitle) {[m
+[32m+[m[32m  if (requireNamespace("shiny", quietly = TRUE)) {[m
+[32m+[m[32m    return([m
+[32m+[m[32m      shiny::tags$div([m
+[32m+[m[32m        class = "kpi-content",[m
+[32m+[m[32m        shiny::tags$div(class = "kpi-value", value),[m
+[32m+[m[32m        shiny::tags$div(class = "kpi-subtitle", subtitle)[m
+[32m+[m[32m      )[m
+[32m+[m[32m    )[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  list(value = value, subtitle = subtitle)[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mplot_phase_flow <- function() {[m
+[32m+[m[32m  phases <- tibble([m
+[32m+[m[32m    phase = c([m
+[32m+[m[32m      "Pre-crisis",[m
+[32m+[m[32m      "Governance tension",[m
+[32m+[m[32m      "Media escalation",[m
+[32m+[m[32m      "Embargo-sensitive",[m
+[32m+[m[32m      "Breach / response"[m
+[32m+[m[32m    ),[m
+[32m+[m[32m    x = seq_along(phase),[m
+[32m+[m[32m    y = 1[m
+[32m+[m[32m  )[m
+[32m+[m
+[32m+[m[32m  ggplot(phases, aes(x = x, y = y)) +[m
+[32m+[m[32m    geom_tile(width = 0.86, height = 0.42, fill = "#edf2f7", colour = "#667085", linewidth = 0.4) +[m
+[32m+[m[32m    geom_text(aes(label = phase), size = 3.6, lineheight = 0.95) +[m
+[32m+[m[32m    geom_segment([m
+[32m+[m[32m      data = phases %>% filter(x < max(x)),[m
+[32m+[m[32m      aes(x = x + 0.43, xend = x + 0.57, y = y, yend = y),[m
+[32m+[m[32m      arrow = arrow(length = unit(0.16, "cm")),[m
+[32m+[m[32m      inherit.aes = FALSE,[m
+[32m+[m[32m      colour = "#475467",[m
+[32m+[m[32m      linewidth = 0.45[m
+[32m+[m[32m    ) +[m
+[32m+[m[32m    scale_x_continuous(limits = c(0.45, 5.55), expand = expansion(mult = 0.02)) +[m
+[32m+[m[32m    scale_y_continuous(limits = c(0.65, 1.35), expand = expansion(mult = 0)) +[m
+[32m+[m[32m    theme_void()[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mplot_crisis_timeline <- function(key_events, show_anomalies = FALSE) {[m
+[32m+[m[32m  if (!has_rows(key_events) || !"event_time" %in% names(key_events)) {[m
+[32m+[m[32m    return(empty_plot())[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  timeline <- key_events %>%[m
+[32m+[m[32m    mutate([m
+[32m+[m[32m      event_time = as.POSIXct(event_time, tz = "UTC"),[m
+[32m+[m[32m      event_label = coalesce(as.character(.data$event_label), "Event"),[m
+[32m+[m[32m      event_type = if ("event_type" %in% names(.)) coalesce(as.character(.data$event_type), "Event") else "Event",[m
+[32m+[m[32m      is_anomaly_event = if ("is_anomaly_event" %in% names(.)) coalesce(.data$is_anomaly_event, FALSE) else FALSE,[m
+[32m+[m[32m      y_value = event_type,[m
+[32m+[m[32m      tooltip = str_c([m
+[32m+[m[32m        "<b>", event_label, "</b>",[m
+[32m+[m[32m        "<br>Time: ", format(event_time, "%Y-%m-%d %H:%M"),[m
+[32m+[m[32m        "<br>Type: ", event_type,[m
+[32m+[m[32m        if ("crisis_phase" %in% names(.)) str_c("<br>Phase: ", .data$crisis_phase) else ""[m
+[32m+[m[32m      )[m
+[32m+[m[32m    ) %>%[m
+[32m+[m[32m    filter(!is.na(event_time))[m
+[32m+[m
+[32m+[m[32m  if (nrow(timeline) == 0) {[m
+[32m+[m[32m    return(empty_plot())[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  labelled_events <- c([m
+[32m+[m[32m    "AG inquiries",[m
+[32m+[m[32m    "NHPI report",[m
+[32m+[m[32m    "Elena incident",[m
+[32m+[m[32m    "Judge enters",[m
+[32m+[m[32m    "SaltWind piece",[m
+[32m+[m[32m    "ResidentIQ rumor",[m
+[32m+[m[32m    "Embargo breach"[m
+[32m+[m[32m  )[m
+[32m+[m
+[32m+[m[32m  timeline <- timeline %>%[m
+[32m+[m[32m    mutate([m
+[32m+[m[32m      label_to_show = if_else(event_label %in% labelled_events, event_label, NA_character_),[m
+[32m+[m[32m      anomaly_display = if (show_anomalies) is_anomaly_event else FALSE[m
+[32m+[m[32m    )[m
+[32m+[m
+[32m+[m[32m  ggplot(timeline, aes(x = event_time, y = y_value, text = tooltip)) +[m
+[32m+[m[32m    geom_vline([m
+[32m+[m[32m      xintercept = as.numeric(ymd_hms("2046-06-05 17:00:00", tz = "UTC")),[m
+[32m+[m[32m      linetype = "dashed",[m
+[32m+[m[32m      colour = "#d97706",[m
+[32m+[m[32m      linewidth = 0.45[m
+[32m+[m[32m    ) +[m
+[32m+[m[32m    geom_vline([m
+[32m+[m[32m      xintercept = as.numeric(ymd_hms("2046-06-05 18:00:00", tz = "UTC")),[m
+[32m+[m[32m      linetype = "dotted",[m
+[32m+[m[32m      colour = "#b91c1c",[m
+[32m+[m[32m      linewidth = 0.55[m
+[32m+[m[32m    ) +[m
+[32m+[m[32m    geom_point(aes(colour = anomaly_display), size = 3, alpha = 0.9) +[m
+[32m+[m[32m    geom_text([m
+[32m+[m[32m      aes(label = label_to_show),[m
+[32m+[m[32m      hjust = -0.05,[m
+[32m+[m[32m      vjust = -0.45,[m
+[32m+[m[32m      size = 3,[m
+[32m+[m[32m      na.rm = TRUE,[m
+[32m+[m[32m      check_overlap = TRUE[m
+[32m+[m[32m    ) +[m
+[32m+[m[32m    scale_colour_manual([m
+[32m+[m[32m      values = c(`FALSE` = "#2f6f9f", `TRUE` = "#c2410c"),[m
+[32m+[m[32m      labels = c(`FALSE` = "Event", `TRUE` = "Anomaly"),[m
+[32m+[m[32m      name = NULL[m
+[32m+[m[32m    ) +[m
+[32m+[m[32m    scale_x_datetime(labels = label_date_short()) +[m
+[32m+[m[32m    labs(x = NULL, y = NULL) +[m
+[32m+[m[32m    theme_minimal(base_size = 12) +[m
+[32m+[m[32m    theme([m
+[32m+[m[32m      legend.position = "bottom",[m
+[32m+[m[32m      panel.grid.minor = element_blank()[m
+[32m+[m[32m    )[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mplot_message_volume_by_phase <- function(comms) {[m
+[32m+[m[32m  if (!has_rows(comms) || !all(c("crisis_phase", "channel_group") %in% names(comms))) {[m
+[32m+[m[32m    return(empty_plot())[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  comms %>%[m
+[32m+[m[32m    count(crisis_phase, channel_group, name = "messages") %>%[m
+[32m+[m[32m    ggplot(aes(x = crisis_phase, y = messages, fill = channel_group)) +[m
+[32m+[m[32m    geom_col(position = "dodge", width = 0.72) +[m
+[32m+[m[32m    scale_y_continuous(labels = comma) +[m
+[32m+[m[32m    labs(x = NULL, y = "Messages", fill = "Channel group") +[m
+[32m+[m[32m    theme_minimal(base_size = 12) +[m
+[32m+[m[32m    theme(axis.text.x = element_text(angle = 25, hjust = 1), panel.grid.minor = element_blank())[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mplot_sensitive_keyword_counts <- function(comms) {[m
+[32m+[m[32m  if (!has_rows(comms) || !"crisis_phase" %in% names(comms)) {[m
+[32m+[m[32m    return(empty_plot())[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  keyword_counts <- comms %>%[m
+[32m+[m[32m    mutate([m
+[32m+[m[32m      embargo_sensitive = if ("embargo_sensitive" %in% names(.)) coalesce(.data$embargo_sensitive, FALSE) else FALSE,[m
+[32m+[m[32m      crisis_sensitive = if ("crisis_sensitive" %in% names(.)) coalesce(.data$crisis_sensitive, FALSE) else FALSE[m
+[32m+[m[32m    ) %>%[m
+[32m+[m[32m    group_by(crisis_phase) %>%[m
+[32m+[m[32m    summarise([m
+[32m+[m[32m      `Embargo-sensitive` = sum(embargo_sensitive, na.rm = TRUE),[m
+[32m+[m[32m      `Crisis-sensitive` = sum(crisis_sensitive, na.rm = TRUE),[m
+[32m+[m[32m      .groups = "drop"[m
+[32m+[m[32m    ) %>%[m
+[32m+[m[32m    pivot_longer(-crisis_phase, names_to = "keyword_group", values_to = "messages")[m
+[32m+[m
+[32m+[m[32m  ggplot(keyword_counts, aes(x = crisis_phase, y = messages, fill = keyword_group)) +[m
+[32m+[m[32m    geom_col(position = "dodge", width = 0.72) +[m
+[32m+[m[32m    scale_y_continuous(labels = comma) +[m
+[32m+[m[32m    labs(x = NULL, y = "Messages", fill = NULL) +[m
+[32m+[m[32m    theme_minimal(base_size = 12) +[m
+[32m+[m[32m    theme(axis.text.x = element_text(angle = 25, hjust = 1), panel.grid.minor = element_blank())[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mbuild_causal_chain_network <- function(nodes, edges) {[m
+[32m+[m[32m  if (!has_rows(nodes) || !has_rows(edges)) {[m
+[32m+[m[32m    return(visNetwork(data.frame(id = "empty", label = "No data available"), data.frame()))[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  vis_nodes <- nodes %>%[m
+[32m+[m[32m    mutate([m
+[32m+[m[32m      id = if ("id" %in% names(.)) as.character(.data$id) else as.character(.data$node_id),[m
+[32m+[m[32m      label = if ("label" %in% names(.)) as.character(.data$label) else as.character(.data$stage),[m
+[32m+[m[32m      level = if ("stage_order" %in% names(.)) .data$stage_order else row_number(),[m
+[32m+[m[32m      title = if ("stage" %in% names(.)) as.character(.data$stage) else label,[m
+[32m+[m[32m      shape = "box"[m
+[32m+[m[32m    ) %>%[m
+[32m+[m[32m    select(id, label, level, title, shape)[m
+[32m+[m
+[32m+[m[32m  vis_edges <- edges %>%[m
+[32m+[m[32m    transmute([m
+[32m+[m[32m      from = as.character(.data$from),[m
+[32m+[m[32m      to = as.character(.data$to),[m
+[32m+[m[32m      arrows = "to",[m
+[32m+[m[32m      width = if ("weight" %in% names(.)) pmax(1, as.numeric(.data$weight)) else 1[m
+[32m+[m[32m    )[m
+[32m+[m
+[32m+[m[32m  visNetwork(vis_nodes, vis_edges) %>%[m
+[32m+[m[32m    visHierarchicalLayout(direction = "LR", sortMethod = "directed") %>%[m
+[32m+[m[32m    visEdges(smooth = TRUE) %>%[m
+[32m+[m[32m    visOptions(highlightNearest = TRUE, nodesIdSelection = FALSE)[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mbuild_agent_network <- function(nodes, edges) {[m
+[32m+[m[32m  if (!has_rows(nodes) || !has_rows(edges)) {[m
+[32m+[m[32m    return(visNetwork(data.frame(id = "empty", label = "No data available"), data.frame()))[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  vis_nodes <- nodes %>%[m
+[32m+[m[32m    mutate([m
+[32m+[m[32m      id = if ("id" %in% names(.)) as.character(.data$id) else as.character(.data$agent_clean),[m
+[32m+[m[32m      label = if ("label" %in% names(.)) as.character(.data$label) else id,[m
+[32m+[m[32m      total_messages = if ("total_messages" %in% names(.)) coalesce(as.numeric(.data$total_messages), 1) else 1,[m
+[32m+[m[32m      value = pmax(5, total_messages),[m
+[32m+[m[32m      title = str_c([m
+[32m+[m[32m        "<b>", label, "</b>",[m
+[32m+[m[32m        if ("total_messages" %in% names(.)) str_c("<br>Messages: ", comma(total_messages)) else "",[m
+[32m+[m[32m        if ("public_posts" %in% names(.)) str_c("<br>Public posts: ", comma(.data$public_posts)) else "",[m
+[32m+[m[32m        if ("anomaly_count" %in% names(.)) str_c("<br>Anomalies: ", comma(.data$anomaly_count)) else "",[m
+[32m+[m[32m        if ("sensitive_count" %in% names(.)) str_c("<br>Sensitive messages: ", comma(.data$sensitive_count)) else ""[m
+[32m+[m[32m      )[m
+[32m+[m[32m    ) %>%[m
+[32m+[m[32m    select(id, label, value, title)[m
+[32m+[m
+[32m+[m[32m  vis_edges <- edges %>%[m
+[32m+[m[32m    mutate([m
+[32m+[m[32m      from = if ("from" %in% names(.)) as.character(.data$from) else as.character(.data$from_agent),[m
+[32m+[m[32m      to = if ("to" %in% names(.)) as.character(.data$to) else as.character(.data$to_agent),[m
+[32m+[m[32m      weight = if ("weight" %in% names(.)) coalesce(as.numeric(.data$weight), 1) else 1,[m
+[32m+[m[32m      width = pmax(1, sqrt(weight)),[m
+[32m+[m[32m      title = str_c([m
+[32m+[m[32m        "Messages: ", comma(weight),[m
+[32m+[m[32m        if ("channel_group" %in% names(.)) str_c("<br>Channel group: ", .data$channel_group) else "",[m
+[32m+[m[32m        if ("channel_risk" %in% names(.)) str_c("<br>Risk: ", .data$channel_risk) else "",[m
+[32m+[m[32m        if ("crisis_phase" %in% names(.)) str_c("<br>Phase: ", .data$crisis_phase) else ""[m
+[32m+[m[32m      ),[m
+[32m+[m[32m      arrows = "to"[m
+[32m+[m[32m    ) %>%[m
+[32m+[m[32m    select(from, to, width, title, arrows)[m
+[32m+[m
+[32m+[m[32m  visNetwork(vis_nodes, vis_edges) %>%[m
+[32m+[m[32m    visEdges(smooth = TRUE) %>%[m
+[32m+[m[32m    visOptions(highlightNearest = TRUE, nodesIdSelection = TRUE) %>%[m
+[32m+[m[32m    visPhysics(stabilization = TRUE)[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mplot_channel_distribution <- function(comms) {[m
+[32m+[m[32m  if (!has_rows(comms) || !"channel_group" %in% names(comms)) {[m
+[32m+[m[32m    return(empty_plot())[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  comms %>%[m
+[32m+[m[32m    count(channel_group, name = "messages") %>%[m
+[32m+[m[32m    ggplot(aes(x = reorder(channel_group, messages), y = messages)) +[m
+[32m+[m[32m    geom_col(fill = "#2f6f9f", width = 0.72) +[m
+[32m+[m[32m    coord_flip() +[m
+[32m+[m[32m    scale_y_continuous(labels = comma) +[m
+[32m+[m[32m    labs(x = NULL, y = "Messages") +[m
+[32m+[m[32m    theme_minimal(base_size = 12) +[m
+[32m+[m[32m    theme(panel.grid.minor = element_blank())[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mplot_network_comparison <- function(comms) {[m
+[32m+[m[32m  if (!has_rows(comms) || !all(c("crisis_phase", "channel_risk") %in% names(comms))) {[m
+[32m+[m[32m    return(empty_plot())[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  comms %>%[m
+[32m+[m[32m    count(crisis_phase, channel_risk, name = "messages") %>%[m
+[32m+[m[32m    ggplot(aes(x = crisis_phase, y = messages, fill = channel_risk)) +[m
+[32m+[m[32m    geom_col(position = "dodge", width = 0.72) +[m
+[32m+[m[32m    scale_y_continuous(labels = comma) +[m
+[32m+[m[32m    labs(x = NULL, y = "Messages", fill = "Channel risk") +[m
+[32m+[m[32m    theme_minimal(base_size = 12) +[m
+[32m+[m[32m    theme(axis.text.x = element_text(angle = 25, hjust = 1), panel.grid.minor = element_blank())[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mbuild_breach_pathway_network <- function(nodes, edges) {[m
+[32m+[m[32m  if (!has_rows(nodes) || !has_rows(edges)) {[m
+[32m+[m[32m    return(visNetwork(data.frame(id = "empty", label = "No data available"), data.frame()))[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  vis_nodes <- nodes %>%[m
+[32m+[m[32m    mutate([m
+[32m+[m[32m      id = if ("id" %in% names(.)) as.character(.data$id) else as.character(.data$node_id),[m
+[32m+[m[32m      label = if ("label" %in% names(.)) as.character(.data$label) else as.character(.data$stage),[m
+[32m+[m[32m      level = if ("stage_order" %in% names(.)) .data$stage_order else row_number(),[m
+[32m+[m[32m      title = str_c([m
+[32m+[m[32m        "<b>", label, "</b>",[m
+[32m+[m[32m        if ("description" %in% names(.)) str_c("<br>", .data$description) else ""[m
+[32m+[m[32m      ),[m
+[32m+[m[32m      shape = "box"[m
+[32m+[m[32m    ) %>%[m
+[32m+[m[32m    select(id, label, level, title, shape)[m
+[32m+[m
+[32m+[m[32m  vis_edges <- edges %>%[m
+[32m+[m[32m    transmute([m
+[32m+[m[32m      from = as.character(.data$from),[m
+[32m+[m[32m      to = as.character(.data$to),[m
+[32m+[m[32m      arrows = "to",[m
+[32m+[m[32m      width = if ("weight" %in% names(.)) pmax(1, as.numeric(.data$weight)) else 1[m
+[32m+[m[32m    )[m
+[32m+[m
+[32m+[m[32m  visNetwork(vis_nodes, vis_edges) %>%[m
+[32m+[m[32m    visHierarchicalLayout(direction = "LR", sortMethod = "directed") %>%[m
+[32m+[m[32m    visEdges(smooth = TRUE) %>%[m
+[32m+[m[32m    visOptions(highlightNearest = TRUE, nodesIdSelection = FALSE)[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mplot_judge_coverage <- function(pathway_evidence) {[m
+[32m+[m[32m  if (!has_rows(pathway_evidence) || !all(c("judge_monitored_status", "pathway_stage") %in% names(pathway_evidence))) {[m
+[32m+[m[32m    return(empty_plot())[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  pathway_evidence %>%[m
+[32m+[m[32m    count(judge_monitored_status, pathway_stage, name = "records") %>%[m
+[32m+[m[32m    ggplot(aes(x = pathway_stage, y = records, fill = judge_monitored_status)) +[m
+[32m+[m[32m    geom_col(position = "dodge", width = 0.72) +[m
+[32m+[m[32m    scale_y_continuous(labels = comma) +[m
+[32m+[m[32m    labs(x = NULL, y = "Evidence records", fill = "Judge status") +[m
+[32m+[m[32m    theme_minimal(base_size = 12) +[m
+[32m+[m[32m    theme(axis.text.x = element_text(angle = 25, hjust = 1), panel.grid.minor = element_blank())[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mplot_pathway_behavior_comparison <- function(pathway_evidence) {[m
+[32m+[m[32m  if (!has_rows(pathway_evidence) || !all(c("crisis_phase", "channel_risk") %in% names(pathway_evidence))) {[m
+[32m+[m[32m    return(empty_plot())[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  pathway_evidence %>%[m
+[32m+[m[32m    count(crisis_phase, channel_risk, name = "records") %>%[m
+[32m+[m[32m    ggplot(aes(x = crisis_phase, y = records, fill = channel_risk)) +[m
+[32m+[m[32m    geom_col(position = "dodge", width = 0.72) +[m
+[32m+[m[32m    scale_y_continuous(labels = comma) +[m
+[32m+[m[32m    labs(x = NULL, y = "Evidence records", fill = "Channel risk") +[m
+[32m+[m[32m    theme_minimal(base_size = 12) +[m
+[32m+[m[32m    theme(axis.text.x = element_text(angle = 25, hjust = 1), panel.grid.minor = element_blank())[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mmake_event_detail_table <- function(data) {[m
+[32m+[m[32m  useful_cols <- c([m
+[32m+[m[32m    "timestamp",[m
+[32m+[m[32m    "event_time",[m
+[32m+[m[32m    "event_label",[m
+[32m+[m[32m    "agent_clean",[m
+[32m+[m[32m    "channel",[m
+[32m+[m[32m    "channel_group",[m
+[32m+[m[32m    "crisis_phase",[m
+[32m+[m[32m    "anomaly_reason",[m
+[32m+[m[32m    "content"[m
+[32m+[m[32m  )[m
+[32m+[m
+[32m+[m[32m  table_data <- if (is.data.frame(data)) {[m
+[32m+[m[32m    data %>% select(any_of(useful_cols))[m
+[32m+[m[32m  } else {[m
+[32m+[m[32m    tibble()[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  DT::datatable([m
+[32m+[m[32m    table_data,[m
+[32m+[m[32m    rownames = FALSE,[m
+[32m+[m[32m    options = list(scrollX = TRUE, pageLength = 8)[m
+[32m+[m[32m  )[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mmake_evidence_table <- function(data) {[m
+[32m+[m[32m  useful_cols <- c([m
+[32m+[m[32m    "pathway_stage",[m
+[32m+[m[32m    "timestamp",[m
+[32m+[m[32m    "message_id",[m
+[32m+[m[32m    "agent_clean",[m
+[32m+[m[32m    "channel",[m
+[32m+[m[32m    "crisis_phase",[m
+[32m+[m[32m    "channel_risk",[m
+[32m+[m[32m    "anomaly_reason",[m
+[32m+[m[32m    "content",[m
+[32m+[m[32m    "deliberating"[m
+[32m+[m[32m  )[m
+[32m+[m
+[32m+[m[32m  table_data <- if (is.data.frame(data)) {[m
+[32m+[m[32m    data %>% select(any_of(useful_cols))[m
+[32m+[m[32m  } else {[m
+[32m+[m[32m    tibble()[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  DT::datatable([m
+[32m+[m[32m    table_data,[m
+[32m+[m[32m    rownames = FALSE,[m
+[32m+[m[32m    options = list(scrollX = TRUE, pageLength = 8)[m
+[32m+[m[32m  )[m
+[32m+[m[32m}[m
