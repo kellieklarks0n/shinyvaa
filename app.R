@@ -373,6 +373,20 @@ nav_guide_item <- function(title, text) {
   )
 }
 
+guide_demo_card <- function(title, description, gif_src, alt_text, caption) {
+  div(
+    class = "guide-demo-card",
+    h3(title),
+    p(description),
+    tags$img(
+      class = "guide-gif",
+      src = gif_src,
+      alt = alt_text
+    ),
+    div(class = "guide-caption", caption)
+  )
+}
+
 ui <- page_navbar(
   title = div(class = "navbar-app-title", "TenantThread AI Crisis"),
   theme = bs_theme(version = 5, bootswatch = "flatly"),
@@ -587,6 +601,27 @@ ui <- page_navbar(
           tags$li("Use Agent Network to understand who was involved."),
           tags$li("Use Embargo Breach Pathway to trace how sensitive information moved toward public release."),
           tags$li("Use evidence tables to support conclusions.")
+        )
+      ),
+      div(
+        class = "guide-demo-section",
+        h2("Interactive Feature Demonstrations"),
+        div(
+          class = "guide-demo-grid",
+          guide_demo_card(
+            "Using the Crisis Timeline",
+            "Use the date range filter, crisis phase filter, anomaly toggle, and range slider to zoom into specific periods of the crisis. Hover over events to see concise event details.",
+            "interactive-timeline.gif",
+            "Animated demonstration of filtering, zooming, and hovering in the Crisis Timeline.",
+            "The Crisis Timeline helps users reconstruct when key events, anomalies, and breach-related activity occurred."
+          ),
+          guide_demo_card(
+            "Exploring the Agent Communication Network",
+            "Filter by focal agent, channel, crisis phase, and keyword to examine how communication patterns shifted across the crisis. Use the network to identify core agents, risky coordination patterns, and the role of The Judge.",
+            "interactive-agent-comms.gif",
+            "Animated demonstration of filtering and exploring the Agent Communication Network.",
+            "The Agent Communication Network helps users identify who communicated with whom and how coordination changed under pressure."
+          )
         )
       )
     )
